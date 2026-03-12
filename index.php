@@ -3,7 +3,7 @@
 // Supabase credentials injected here so JS never hardcodes keys
 
 $supabaseUrl = getenv('VITE_SUPABASE_URL') ?: 'https://okfplzjguiyxzybcxkzn.supabase.co';
-$supabaseAnonKey = getenv('VITE_SUPABASE_ANON_KEY') ?: '';
+$supabaseAnonKey = getenv('VITE_SUPABASE_ANON_KEY') ?: 'sb_publishable_VJpRD7vqpL78hFetKAPtxw_GGMZnkT4';
 ?>
 <!DOCTYPE html>
 <html lang="en">
