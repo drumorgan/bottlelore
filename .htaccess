@@ -1,0 +1,15 @@
+RewriteEngine On
+
+# Serve existing files and directories directly
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Rewrite everything else to index.php for SPA routing
+RewriteRule ^ index.php [L]
+
+# Disable caching for JS modules during development
+<IfModule mod_headers.c>
+    <FilesMatch "assets/js/.*\.js$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+    </FilesMatch>
+</IfModule>
