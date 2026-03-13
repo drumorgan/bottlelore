@@ -168,3 +168,80 @@ Phase 2 is where the app comes to life. The kickoff document specifies these ind
 13. `assets/css/admin.css` — Admin panel styles
 
 Each file has a single job. This is the architecture that keeps the project manageable as it grows.
+
+---
+
+## Chapter 3: Bringing the App to Life
+
+**Date:** March 13, 2026
+**Goal:** Build all Phase 2 core JS modules, views, components, and stylesheets — turning the scaffolding into a working application.
+
+### Step 9: Create the core JS modules
+
+Following the build order from `CLAUDE.md` (logger → utils → database-tables → supabase-gateway → state → router → app), we created each module one at a time and ran the linter after each group.
+
+| File | What it does |
+|------|-------------|
+| `assets/js/logger.js` | All console and Sentry logging. The only file allowed to use `console.*` |
+| `assets/js/utils.js` | Shared utilities: `escapeHtml()`, `showToast()`, `formatDate()`, `slugify()`, global error handlers |
+| `assets/js/database-tables.js` | Table name constants — single source of truth for DB table names |
+| `assets/js/supabase-gateway.js` | The **only** file that imports Supabase. Auth, wineries, wines, admin CRUD |
+| `assets/js/state.js` | Plain getter/setter state management. No reactive framework needed |
+| `assets/js/router.js` | SPA path parsing and `history.pushState` navigation |
+| `assets/js/app.js` | Entry point — wires routes, auth listener, error handlers, dynamic imports |
+
+**Vibe coder tip:** Notice how every module has exactly one job. The logger logs. The gateway talks to the database. The state holds data. When something breaks, you know exactly which file to look at. This isn't about being fancy — it's about staying sane when the project grows.
+
+### Step 10: Create the views
+
+Two views handle the entire UI:
+
+| File | What it does |
+|------|-------------|
+| `assets/js/views/bottle-page.js` | The public page guests see when scanning a QR code. Shows wine name, vintage, tasting notes, price, and food pairings |
+| `assets/js/views/admin.js` | The staff panel — login form, wine list table, and add/edit wine form. All in one file with internal routing |
+
+Both views follow the same pattern: export a `render(container, ...)` function that `app.js` calls via dynamic `import()`. Every piece of user content goes through `escapeHtml()` before hitting `innerHTML`. Every error shows a toast.
+
+### Step 11: Create the QR generator component
+
+`assets/js/components/qr-generator.js` wraps the `qrcode` npm library. It generates a canvas-based QR code for any bottle URL. Simple wrapper — one function in, one canvas out.
+
+### Step 12: Create the stylesheets
+
+Three CSS files, matching the structure:
+
+| File | What it does |
+|------|-------------|
+| `assets/css/main.css` | Global reset, typography, buttons, toast notifications, forms, loading states |
+| `assets/css/bottle-page.css` | The public wine page — clean, mobile-first, designed for quick scanning |
+| `assets/css/admin.css` | Login form, wine list table, wine edit form, responsive breakpoints |
+
+### What we had at the end of Chapter 3
+
+- All 7 core JS modules created and linting clean
+- 2 views (bottle-page, admin) with full CRUD UI
+- 1 component (QR generator)
+- 3 stylesheets
+- **Phase 2: Complete**
+
+### Key lessons
+
+- **Build order matters.** Each module depends on the ones before it. Logger first, then utils (which imports logger), then gateway (which imports both). Following the specified order means you never have circular dependency surprises.
+- **One file, one job.** The gateway pattern (one file owns all DB access) seems strict, but it means you can search for any Supabase call and find it in exactly one place. Same for logging, same for state.
+- **escapeHtml() everywhere.** Every single piece of user-supplied data gets escaped before `innerHTML`. This isn't paranoia — it's the rule. XSS vulnerabilities happen when you forget "just this one time."
+- **Toast is the only error UI.** No alerts, no console instructions (iPad has no console). Every error the user might encounter shows a toast. This is a hard constraint from the environment.
+
+---
+
+## What's Next: Phase 3
+
+Phase 3 sets up the Supabase database schema. The kickoff document specifies:
+
+1. Create tables (wineries, wines, winery_admins)
+2. Enable Row Level Security on all tables
+3. Create RLS policies (public read for guests, winery-scoped write for admins)
+4. Seed test data (a test winery with two wines)
+5. Verify public access works
+
+This is done in the Supabase SQL editor, not in the codebase.

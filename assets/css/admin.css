@@ -1,0 +1,88 @@
+/* BottleLore — Admin Panel Styles */
+
+.admin-login {
+  max-width: 400px;
+  margin: 3rem auto;
+  text-align: center;
+}
+
+.admin-login h1 {
+  margin-bottom: 1.5rem;
+  color: #6b2fa0;
+}
+
+.admin-login__form {
+  text-align: left;
+}
+
+.admin-login__form button[type="submit"] {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.75rem;
+  font-size: 1rem;
+}
+
+/* ── Wine List ───────────────────────────────────────────────────────────── */
+
+.admin-wines__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.admin-wines__header h1 {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.admin-wines__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-wines__table th,
+.admin-wines__table td {
+  text-align: left;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.admin-wines__table th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666;
+}
+
+.admin-wines__table tbody tr:hover {
+  background: #f9f5ff;
+}
+
+/* ── Wine Form ───────────────────────────────────────────────────────────── */
+
+.admin-wine-form {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.admin-wine-form h1 {
+  margin-bottom: 1rem;
+}
+
+.admin-wine-form button[type="submit"] {
+  margin-top: 1.5rem;
+  margin-right: 0.5rem;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .admin-wines__table th:nth-child(3),
+  .admin-wines__table td:nth-child(3),
+  .admin-wines__table th:nth-child(4),
+  .admin-wines__table td:nth-child(4) {
+    display: none;
+  }
+}
