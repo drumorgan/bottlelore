@@ -133,7 +133,8 @@ function renderSignInForm(container, bootstrapError = null) {
       navigate('/admin/wines');
     } catch (err) {
       logger.error('Login failed', err);
-      showToast('Login failed. Check your credentials.', 'error');
+      const msg = err.message || 'Check your credentials.';
+      showToast(`Login failed: ${msg}`, 'error');
     }
   });
 }
@@ -148,10 +149,42 @@ async function renderWineList(container) {
 
   try {
     const user = state.getCurrentUser();
-    const adminData = await gateway.getAdminWinery(user.id);
-    state.setCurrentWinery(adminData.wineries);
+    let winery = null;
 
-    const wines = await gateway.getWinesByWinery(adminData.winery_id);
+    // Super admins may not have a winery_admins row — fall back to getAllWineries
+    try {
+      const adminData = await gateway.getAdminWinery(user.id);
+      winery = adminData.wineries;
+    } catch (_) {
+      if (state.isSuperAdmin()) {
+        const allWineries = await gateway.getAllWineries();
+        if (allWineries.length > 0) {
+          winery = allWineries[0];
+        }
+      }
+    }
+
+    if (!winery) {
+      container.innerHTML = `
+        <div class="admin-wines">
+          <header class="admin-wines__header">
+            <h1>No Winery Found</h1>
+            <button id="logout-btn" class="btn btn--secondary">Sign Out</button>
+          </header>
+          <p>You are not assigned to any winery. A super admin needs to create a winery and assign you to it.</p>
+        </div>
+      `;
+      document.getElementById('logout-btn').addEventListener('click', async () => {
+        await gateway.signOut();
+        state.resetAllState();
+        navigate('/admin');
+      });
+      return;
+    }
+
+    state.setCurrentWinery(winery);
+
+    const wines = await gateway.getWinesByWinery(winery.id);
     state.setWines(wines);
 
     const rows = wines.map(w => `
@@ -171,7 +204,7 @@ async function renderWineList(container) {
     container.innerHTML = `
       <div class="admin-wines">
         <header class="admin-wines__header">
-          <h1>${escapeHtml(adminData.wineries.name)} — Wines${superBadge}</h1>
+          <h1>${escapeHtml(winery.name)} — Wines${superBadge}</h1>
           <button id="add-wine-btn" class="btn btn--primary">Add Wine</button>
           <button id="logout-btn" class="btn btn--secondary">Sign Out</button>
         </header>
