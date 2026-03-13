@@ -123,9 +123,17 @@ function renderSignInForm(container, bootstrapError = null) {
     try {
       await gateway.signIn(email, password);
 
+      // Complete pending bootstrap if signUp happened before email confirmation
       try {
-        const isSA = await gateway.checkIsSuperAdmin();
-        state.setSuperAdmin(isSA);
+        const stillNeedsBootstrap = await gateway.isBootstrapNeeded();
+        if (stillNeedsBootstrap) {
+          await gateway.bootstrapSuperAdmin();
+          state.setSuperAdmin(true);
+          showToast('Super admin account created! You\'re all set.', 'success');
+        } else {
+          const isSA = await gateway.checkIsSuperAdmin();
+          state.setSuperAdmin(isSA);
+        }
       } catch (_) {
         state.setSuperAdmin(false);
       }
