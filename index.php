@@ -72,6 +72,15 @@ Sentry: <?php echo !empty($sentryDsn) ? 'set' : 'not set'; ?>
     <?php if ($bundleFile): ?>
       <script type="module" src="<?php echo htmlspecialchars($bundleFile); ?>"></script>
     <?php else: ?>
+      <!-- Import map: resolve bare specifiers via CDN when bundle is missing -->
+      <script type="importmap">
+      {
+        "imports": {
+          "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+          "qrcode": "https://esm.sh/qrcode@1"
+        }
+      }
+      </script>
       <script type="module" src="/assets/js/app.js"></script>
     <?php endif; ?>
 </body>
