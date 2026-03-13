@@ -1,109 +1,170 @@
 # BottleLore Build Diary
 
-A plain-English record of building BottleLore from zero — for anyone curious about what it's actually like to vibe-code a project with AI.
+A step-by-step guide to building a real web app with AI — written for someone who's never done it before. If you can describe what you want, you can vibe-code it into existence. This diary shows you how.
 
 ---
 
-## Chapter 1: Hello, World
+## How to Use This Guide
+
+This isn't a textbook. It's a real project diary — mistakes, detours, and all. Each chapter covers one working session. By the end, you'll have a live web app that real people use.
+
+**What you need to start:**
+- A description of what you want to build (ours was a PDF from the client)
+- An AI coding assistant (we used Claude Code)
+- A willingness to learn as you go
+
+**What you don't need:**
+- Programming experience
+- A computer science degree
+- To understand every line of code the AI writes
+
+---
+
+## Chapter 1: Getting a Live URL
 
 **Date:** March 12, 2026
+**Goal:** Go from nothing to a live website that updates automatically when you push code.
 
-### What we're building
+### Step 1: Describe your project to the AI
 
-BottleLore is a web app for wineries. You scan a QR code on a wine bottle and get tasting notes, food pairings, and the story behind the wine. The winery manages everything through a simple admin panel.
+We started with a PDF from the client describing what they want — a winery app where guests scan QR codes to see tasting notes. We gave that PDF to Claude Code and asked it to create a kickoff document. The AI read the requirements and produced a detailed build plan broken into phases, with every file mapped out.
 
-### Starting from nothing
+**Vibe coder tip:** Your first prompt sets the tone for the whole project. Give the AI as much context as you can — who the users are, what they need, what the constraints are. The better the brief, the better the code.
 
-We kicked off with a PDF from the client describing what they want — QR codes, tasting notes, a clean mobile-first experience. The repo had exactly three things: that PDF, a README, and a hello world HTML file.
+### Step 2: Get your domain pointed at hosting
 
-### Getting a domain live
+The domain `bottlelore.com` was already registered but wasn't connected to a server. We submitted DNS nameserver changes to point it at InMotion Hosting.
 
-The first real task wasn't code — it was infrastructure. Here's what that looked like:
+Then we discovered there was no hosting plan for this domain. A quick chat with InMotion support confirmed the existing shared hosting account could cover it — no extra cost.
 
-1. **Domain pointing.** The domain `bottlelore.com` was already registered, but it needed to be pointed at a hosting provider. We submitted DNS nameserver changes to point at InMotion Hosting.
+**Vibe coder tip:** DNS changes can take minutes to hours to propagate. Don't panic if the site doesn't load right away. Do something else and come back.
 
-2. **Do I even have hosting?** Turns out the domain was pointed at InMotion, but there was no hosting plan set up for it. A quick chat with InMotion support confirmed that the existing shared hosting account (already running another site) could cover this domain too — no new plan needed.
+### Step 3: Set up the hosting directory
 
-3. **Adding the domain in cPanel.** InMotion's cPanel created a new directory at `~/bottlelore.com/` for the site files. The document root was automatically configured to point there.
+InMotion's cPanel created a new directory at `~/bottlelore.com/` when we added the domain. The server automatically serves files from this folder when someone visits the URL.
 
-4. **The blank page problem.** Even after the domain was set up, visiting `bottlelore.com` showed an "Index of /" directory listing instead of a web page. This was just DNS propagation lag and browser caching — a hard refresh fixed it once things caught up.
+We put a simple `index.html` file with "Hello World" in it — just to prove the chain works.
 
-### Setting up automated deployment
+### Step 4: Set up automated deployment
 
-We didn't want to manually upload files to the server every time we make a change. So we set up a pipeline: push code to GitHub, and it automatically appears on the live site.
+We didn't want to manually upload files every time we make a change. So we created a pipeline: push code to GitHub, and it automatically appears on the live site.
 
-Here's how that works:
+Here's what that involved:
 
-1. **Created an FTP account in cPanel.** This is a dedicated login scoped specifically to the `bottlelore.com/` directory. Important: the FTP deploy tool syncs files by deleting anything on the server that isn't in the repo. A scoped account means it can't accidentally nuke your other sites.
+1. **Created an FTP account in cPanel** — scoped specifically to the `bottlelore.com/` directory. This is critical: the deploy tool syncs files by deleting anything on the server that isn't in the repo. A scoped account means it can't accidentally nuke your other sites.
 
-2. **Added GitHub secrets.** The FTP server address, username, and password were stored as encrypted secrets in the GitHub repo settings. The code never sees the actual credentials.
+2. **Added GitHub secrets** — the FTP server address, username, and password were stored as encrypted secrets in the GitHub repo settings. The code never sees the actual credentials.
 
-3. **Created a GitHub Actions workflow.** This is a YAML file (`.github/workflows/deploy.yml`) that tells GitHub: "Every time someone pushes to the `main` branch, check out the code and FTP it to the server." We used an open-source action called `FTP-Deploy-Action` that handles the sync.
+3. **Created a GitHub Actions workflow** — a YAML file (`.github/workflows/deploy.yml`) that tells GitHub: "Every time someone pushes to the `main` branch, check out the code and FTP it to the server."
 
-4. **First deploy.** Merged to main, the action ran, and the files appeared on the server. Visited `bottlelore.com` and saw "Hello World — BottleLore connection test — all systems go."
+4. **First deploy** — merged to main, the action ran, files appeared on the server. Visited `bottlelore.com` and saw our hello world page.
 
-### What we ended up with
+### What we had at the end of Chapter 1
 
-- A live website at `bottlelore.com` showing a hello world page
-- Automated deployment: push to GitHub, site updates automatically
-- Zero application code written yet — but the entire delivery pipeline is in place
+- A live website at `bottlelore.com`
+- Automated deployment: push to GitHub → site updates automatically
+- Zero application code — but the entire delivery pipeline works
 
-### Lessons for vibe coders
+### Key lessons
 
-- **Infrastructure first.** It's tempting to jump into building features, but getting your deployment pipeline working early means every change you make is immediately visible on a real URL. This keeps momentum high and makes it easy to show progress.
-- **Scope your FTP accounts.** The deploy tool mirrors your repo to the server and deletes anything extra. If your FTP user has access to your entire server, that's a bad day waiting to happen.
-- **DNS takes time.** After pointing a domain, it can take minutes to hours for the change to propagate. Don't panic if the site doesn't load immediately.
-- **Start with hello world.** It's the simplest possible proof that the whole chain works: code in repo → GitHub Actions → FTP → live site. Once that's confirmed, you can build with confidence.
+- **Infrastructure first.** Get your deployment pipeline working before you write a single line of application code. Every change you make will be immediately visible on a real URL. This keeps momentum high.
+- **Scope your FTP accounts.** Seriously. The deploy tool mirrors your repo and deletes extras. If your FTP user has full server access, that's a disaster waiting to happen.
+- **Start with hello world.** The simplest possible proof that the whole chain works: code in repo → GitHub → FTP → live site. Once that works, build with confidence.
 
 ---
 
 ## Chapter 2: Wiring Up the Plumbing
 
 **Date:** March 12–13, 2026
+**Goal:** Connect the database and error monitoring — the invisible infrastructure that every real app needs.
 
-### Supabase: the database
+### Step 5: Set up the database connection
 
-BottleLore needs a database to store wines, wineries, tasting notes — all the real data. We're using Supabase (a hosted Postgres service with a JS client library). The project already existed on Supabase from an earlier test; the task was getting the credentials wired into the app properly.
+BottleLore needs a database to store wines, wineries, and tasting notes. We're using Supabase — a hosted Postgres database with a JavaScript client library.
 
-The kickoff PDF specifies a "config pattern" — PHP reads credentials from environment variables (for production/CI) or a local config file (for development), then injects them into the page as `window.APP_CONFIG`. JavaScript never hardcodes API keys.
+The kickoff document specifies a "config pattern" — PHP reads credentials from environment variables (for production) or a local config file (for development), then injects them into the page as `window.APP_CONFIG`. JavaScript never hardcodes API keys.
 
-We created `api/config.php` with a three-tier resolution: env vars → `config.local.php` → null. The `$appConfig` array carries supabase, sentry, and build metadata, and gets JSON-encoded into a `<script>` tag in `index.php`.
+We created `api/config.php` with a three-tier credential resolution: env vars → `config.local.php` → null. The config gets JSON-encoded into a `<script>` tag inside `index.php`.
 
-### Sentry: error monitoring without DevTools
+**Vibe coder tip:** This pattern — server injects config, JavaScript reads it — means the same codebase works in dev, CI, and production without `.env` file gymnastics in JavaScript. Ask your AI to use this pattern early. It saves headaches later.
 
-Here's the thing about building for iPad: there's no console. No DevTools. If something breaks in production, you'd never know unless a user tells you — and they usually just leave. Sentry catches JavaScript errors automatically and reports them to a dashboard.
+### Step 6: Set up error monitoring
 
-Setup was straightforward:
-1. Created a new "bottlelore" project under the existing Sentry organization (which also hosts Yoink Adventures)
+Here's the thing about building for iPad: there's no developer console. No DevTools. If something breaks in production, you'd never know unless a user tells you — and they usually just leave.
+
+Sentry catches JavaScript errors automatically and reports them to a dashboard.
+
+Setup:
+1. Created a new "bottlelore" project in Sentry
 2. Picked "Browser JavaScript" as the platform
-3. Got a Sentry key and DSN
-4. Updated `index.php` to conditionally load the Sentry CDN script when a DSN is configured
+3. Got a Sentry DSN (a URL that identifies your project)
+4. Updated `index.php` to load the Sentry script in the `<head>` — before any application code, so it catches errors even during initialization
 
-The Sentry loader goes in the `<head>` before any application code — that way it catches errors even during app initialization.
+**Vibe coder tip:** Set up error monitoring early. It costs nothing for small projects. You'll thank yourself the first time you catch a silent error that would have gone unnoticed.
 
-### Where we stand
+### Step 7: Create the project instruction file
 
-Here's what exists vs. what Phase 1 of the kickoff PDF requires:
+We created `CLAUDE.md` — a file that tells the AI assistant how to behave in this project. It includes hard rules (like "only one file talks to the database"), the tech stack, known gotchas, and deployment steps.
 
-| File | Status |
-|------|--------|
-| CLAUDE.md | Done |
-| .github/workflows/deploy.yml | Done |
-| index.php | Done (Sentry + Vite manifest + APP_CONFIG) |
-| api/config.php | Done |
-| .htaccess | Exists — needs HTTPS redirect + Vite hashed bundle caching |
-| .gitignore | Exists — needs coverage/, config.local.php additions |
-| vite.config.js | Exists — needs git SHA, sourcemaps, entry/output tweaks |
-| package.json | Missing |
-| vitest.config.js | Missing |
-| eslint.config.js | Missing |
-| SECURITY-CHECKLIST.md | Missing |
-| Directory scaffolding | Missing (assets/js/, assets/css/, tests/, docs/) |
+This file is the single most important thing in the repo for vibe coding. It's your AI's memory between sessions. Without it, every new session starts from zero.
 
-Phase 1 is roughly half done. The infrastructure and config plumbing is in place. What's left is the build tooling (Vite/Vitest/ESLint config) and the empty directory skeleton that Phase 2 will fill with actual code.
+**Vibe coder tip:** Your `CLAUDE.md` (or equivalent instruction file) is your project's constitution. Put your non-negotiable rules there. The AI reads it at the start of every session and follows it.
 
-### Lessons for vibe coders
+### Step 8: Finish the foundation files
 
-- **Config injection beats hardcoded keys.** Having PHP inject credentials means the same codebase works in dev, CI, and production without any `.env` file gymnastics in JavaScript.
-- **Set up error monitoring early.** Sentry costs nothing for small projects and saves you from flying blind. Especially on iPad where you literally cannot open a console.
-- **One org, many projects.** You don't need separate Sentry accounts for each app. One organization can hold all your projects, and errors stay cleanly separated.
+With the plumbing connected, we completed the remaining Phase 1 files:
+
+| File | What it does |
+|------|-------------|
+| `package.json` | Lists project dependencies and build scripts |
+| `vite.config.js` | Configures the build tool (bundles JS for production) |
+| `vitest.config.js` | Configures the test runner |
+| `eslint.config.js` | Configures the code linter (catches mistakes) |
+| `.htaccess` | Server rules: HTTPS redirect, SPA routing, caching |
+| `.gitignore` | Tells Git which files to ignore |
+| `SECURITY-CHECKLIST.md` | Pre-deploy security verification checklist |
+| Directory scaffolding | Empty folders for JS, CSS, views, components, tests, docs |
+
+**Vibe coder tip:** Notice that none of these files are the actual app. They're all scaffolding — the structure that the app will be built inside. A solid foundation means the AI can write clean, organized code in the next phase instead of one giant messy file.
+
+### What we had at the end of Chapter 2
+
+- Sentry connected and catching errors
+- Supabase credentials flowing through the config pattern
+- Build tooling configured (Vite, Vitest, ESLint)
+- Complete project scaffolding ready for application code
+- **Phase 1: Complete**
+
+### Key lessons
+
+- **Config injection beats hardcoded keys.** Having PHP inject credentials means one codebase works everywhere.
+- **Error monitoring is not optional.** Especially on iPad where you literally cannot open a console.
+- **The plan calls for many files, not one.** The kickoff document maps out 10+ individual JavaScript modules, each with a single responsibility. This isn't busywork — it's what lets the AI (and you) understand and modify the code later. One giant file becomes unmaintainable fast.
+- **One org, many projects.** You don't need separate Sentry accounts for each app. One organization holds all your projects cleanly.
+
+---
+
+## What's Next: Phase 2
+
+Phase 2 is where the app comes to life. The kickoff document specifies these individual files to create:
+
+**Core JS modules** (built in this order):
+1. `assets/js/logger.js` — All logging and Sentry integration
+2. `assets/js/utils.js` — Shared utilities (escapeHtml, showToast, etc.)
+3. `assets/js/database-tables.js` — Table name constants
+4. `assets/js/supabase-gateway.js` — The ONLY file that talks to the database
+5. `assets/js/state.js` — Application state management
+6. `assets/js/router.js` — URL routing for the single-page app
+7. `assets/js/app.js` — Entry point that wires everything together
+
+**Views and components:**
+8. `assets/js/views/bottle-page.js` — What guests see when they scan a QR code
+9. `assets/js/views/admin.js` — The winery staff admin panel
+10. `assets/js/components/qr-generator.js` — Generates QR codes for bottles
+
+**Stylesheets:**
+11. `assets/css/main.css` — Global styles
+12. `assets/css/bottle-page.css` — Bottle page styles
+13. `assets/css/admin.css` — Admin panel styles
+
+Each file has a single job. This is the architecture that keeps the project manageable as it grows.
