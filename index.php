@@ -19,6 +19,7 @@ if (file_exists($manifestPath)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BottleLore</title>
     <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/admin.css">
 
     <!-- Sentry (load before app) -->
     <?php if (!empty($sentryDsn)): ?>
@@ -37,10 +38,35 @@ if (file_exists($manifestPath)) {
     <div id="app">
       <div id="loading" style="font-family: system-ui, sans-serif; max-width: 480px; margin: 60px auto; padding: 0 20px;">
         <h1>BottleLore</h1>
-        <p>Phase 1 complete — foundation is in place.</p>
-        <p style="color: #888; font-size: 0.9em;">Sentry: <?php echo !empty($sentryDsn) ? 'connected' : 'not configured'; ?> · Supabase: <?php echo !empty($supabaseUrl) ? 'configured' : 'not configured'; ?></p>
+        <p>Loading app...</p>
+        <details style="margin-top: 20px; font-size: 0.85em; color: #888;">
+          <summary>Diagnostics</summary>
+          <pre style="white-space: pre-wrap; word-break: break-all; background: #1a1a1a; padding: 12px; border-radius: 6px; margin-top: 8px;">
+Bundle: <?php echo $bundleFile ? htmlspecialchars($bundleFile) : 'NOT FOUND (using dev fallback)'; ?>
+
+Manifest: <?php echo file_exists($manifestPath) ? 'found' : 'MISSING at ' . htmlspecialchars($manifestPath); ?>
+
+Supabase URL: <?php echo !empty($supabaseUrl) ? 'set (' . substr($supabaseUrl, 0, 30) . '...)' : 'NOT SET'; ?>
+
+Anon Key: <?php echo !empty($supabaseKey) ? 'set (' . substr($supabaseKey, 0, 20) . '...)' : 'NOT SET'; ?>
+
+Sentry: <?php echo !empty($sentryDsn) ? 'set' : 'not set'; ?>
+</pre>
+          <pre id="js-errors" style="white-space: pre-wrap; word-break: break-all; background: #2a1a1a; padding: 12px; border-radius: 6px; margin-top: 8px; color: #f88;"></pre>
+        </details>
       </div>
     </div>
+
+    <!-- Catch JS errors visibly (iPad has no DevTools) -->
+    <script>
+      var errBox = null;
+      function showErr(msg) {
+        if (!errBox) errBox = document.getElementById('js-errors');
+        if (errBox) errBox.textContent += msg + '\n';
+      }
+      window.addEventListener('error', function(e) { showErr('ERROR: ' + e.message + ' (' + e.filename + ':' + e.lineno + ')'); });
+      window.addEventListener('unhandledrejection', function(e) { showErr('PROMISE: ' + (e.reason?.message || e.reason)); });
+    </script>
 
     <!-- Load bundle (production) or dev modules -->
     <?php if ($bundleFile): ?>
