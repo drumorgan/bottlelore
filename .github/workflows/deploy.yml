@@ -6,11 +6,54 @@ on:
       - main
 
 jobs:
-  deploy:
-    name: Deploy via FTP
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          if [ ! -f assets/dist/.vite/manifest.json ]; then
+            echo "ERROR: manifest.json not found — build failed"
+            exit 1
+          fi
+          echo "Build verified: manifest.json exists"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            assets/dist/
+          retention-days: 1
+
+  deploy:
+    name: Deploy via FTP
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: assets/dist/
 
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
