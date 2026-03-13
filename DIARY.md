@@ -318,6 +318,95 @@ The anon key is safe to expose in the browser — that's by design. RLS policies
 
 ---
 
+## Chapter 5: Making It Real — Build, Deploy, and Debug
+
+**Date:** March 13, 2026
+**Goal:** Get the production bundle building in CI, deploying to the server, and loading in the browser.
+
+### Step 18: Add a build step to the deploy workflow
+
+Chapter 1's deploy workflow was simple: check out the code, FTP it to the server. But now we have a Vite build that bundles and minifies JavaScript. The raw source files alone won't work in production — we need the compiled bundle.
+
+We split the workflow into two jobs:
+
+1. **Build job** — checks out the code, runs `npm ci`, runs tests, runs `npm run build`, verifies that `assets/dist/.vite/manifest.json` exists, then uploads `assets/dist/` as a GitHub Actions artifact.
+
+2. **Deploy job** — checks out the code, downloads the build artifact into `assets/dist/`, then FTPs everything to the server.
+
+The deploy job has `needs: build`, so it only runs if the build succeeds. This means a broken build never reaches the live site.
+
+**Vibe coder tip:** The verify step (`if [ ! -f manifest.json ]; exit 1`) is a safety net. If the build silently produces nothing, the workflow fails before deploying. Always verify your build output exists before shipping it.
+
+### Step 19: Add Supabase credentials to the server
+
+The config pattern from Chapter 2 reads credentials from `config.local.php` on the server. We created this file directly in cPanel File Manager at `bottlelore.com/config.local.php`:
+
+```php
+<?php
+return [
+    'supabase_url' => 'https://your-project.supabase.co',
+    'supabase_anon_key' => 'your-anon-key-here',
+    'sentry_dsn' => 'your-sentry-dsn-here',
+];
+```
+
+This file is git-ignored — it lives only on the server. The deploy's FTP sync won't delete it because it's not in the repo (and the FTP action only removes files it previously tracked).
+
+**Vibe coder tip:** Never put credentials in your repo, even in a "local config" file. Create it directly on the server through cPanel. If it accidentally ends up in a commit, remove it immediately and rotate the keys.
+
+### Step 20: Wire up index.php to load the production bundle
+
+The entry point `index.php` needs to know which JavaScript file to load. In development, it's just `assets/js/app.js`. In production, Vite generates a hashed filename like `app.Sw2BVqgX.min.js` — and the mapping lives in `.vite/manifest.json`.
+
+We updated `index.php` to:
+1. Read the manifest file and extract the hashed bundle filename
+2. If found, load the production bundle via a `<script type="module">` tag
+3. If not found (local dev, or manifest missing), fall back to loading the raw source with an import map that resolves `@supabase/supabase-js` from a CDN
+
+We also added a visible diagnostics panel (inside a collapsible `<details>` element) that shows whether the bundle was found, whether the manifest exists, and whether the Supabase/Sentry config is set. This is critical for iPad debugging — no DevTools means errors need to be visible on the page.
+
+**Vibe coder tip:** The dev fallback with import maps means you can test the app without running a build. But production should always use the bundle — it's smaller, faster, and has all dependencies compiled in.
+
+### Step 21: Fix hidden files in the artifact upload
+
+After deploying, the site still showed "Bundle: NOT FOUND" and "Manifest: MISSING." The deploy was succeeding (green checkmarks in GitHub Actions), files were appearing on the server — but `.vite/manifest.json` was nowhere to be found.
+
+The culprit: **`actions/upload-artifact@v4` excludes hidden directories by default.** The `.vite` folder (which starts with a dot) was silently dropped from the build artifact. The build job verified the manifest existed (same job, same filesystem), but the artifact that got passed to the deploy job didn't include it.
+
+The fix was one line:
+
+```yaml
+- name: Upload build artifacts
+  uses: actions/upload-artifact@v4
+  with:
+    name: build-output
+    path: |
+      assets/dist/
+    include-hidden-files: true   # ← this was missing
+    retention-days: 1
+```
+
+After this fix, the full build output — including `.vite/manifest.json` — reached the server. The app loaded the production bundle correctly.
+
+**Vibe coder tip:** When a deploy "succeeds" but the result is wrong, check what's actually arriving on the server. Green checkmarks in CI don't mean the right files were deployed. In our case, the build was fine, the FTP was fine — but the handoff between them (the artifact) was silently dropping files. cPanel File Manager is your friend here.
+
+### What we had at the end of Chapter 5
+
+- Deploy workflow: build → verify → artifact → FTP (two-job pipeline)
+- Supabase credentials on the server via `config.local.php`
+- `index.php` loading the production Vite bundle via manifest lookup
+- Visible diagnostics panel for iPad debugging
+- Production bundle successfully deployed and loading in the browser
+
+### Key lessons
+
+- **CI green doesn't mean "working."** Our deploy succeeded 5 times in a row while silently shipping an incomplete build. The artifact upload was dropping hidden files. Trust but verify — check what actually landed on the server.
+- **`upload-artifact@v4` excludes dotfiles by default.** This is a breaking change from v3. If your build output includes directories like `.vite`, `.next`, `.nuxt`, etc., you must set `include-hidden-files: true`. This will bite you silently.
+- **Two-job pipelines need artifact handoffs.** The build job and deploy job run on different machines. You can't just `npm run build` and expect the files to be there for the FTP step. Artifacts bridge the gap — but only if they include everything.
+- **Visible error reporting saves hours.** The diagnostics panel in `index.php` told us exactly what was wrong: manifest missing, bundle not found. Without it, we'd have been guessing. On iPad, every error must surface in the UI.
+
+---
+
 ## What's Next: Phase 4
 
-Phase 4 updates the GitHub Actions deploy workflow to pass Supabase and Sentry credentials as environment variables in production. The deploy pipeline from Chapter 1 handles FTP — now it needs to inject the config secrets so the live site can talk to the database.
+With the build pipeline working and the production bundle loading, the next step is verifying the app actually works end-to-end: can a guest scan a QR code and see wine details? Can an admin log in and manage wines? Time to test the full flow against the live Supabase database.
