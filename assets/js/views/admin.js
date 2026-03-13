@@ -29,16 +29,18 @@ async function renderLogin(container) {
   container.innerHTML = '<div class="loading">Loading...</div>';
 
   let needsBootstrap = false;
+  let bootstrapError = null;
   try {
     needsBootstrap = await gateway.isBootstrapNeeded();
   } catch (err) {
     logger.error('Bootstrap check failed', err);
+    bootstrapError = err;
   }
 
   if (needsBootstrap) {
     renderBootstrapForm(container);
   } else {
-    renderSignInForm(container);
+    renderSignInForm(container, bootstrapError);
   }
 }
 
@@ -90,10 +92,19 @@ function renderBootstrapForm(container) {
   });
 }
 
-function renderSignInForm(container) {
+function renderSignInForm(container, bootstrapError = null) {
+  const errorHint = bootstrapError
+    ? `<details class="admin-login__diag" style="margin-bottom:16px;font-size:0.85em;color:#c44;">
+         <summary>Setup issue detected</summary>
+         <p style="margin:8px 0;">The bootstrap check failed: <strong>${escapeHtml(bootstrapError.message || String(bootstrapError))}</strong></p>
+         <p>If this is a fresh install, the database functions may not be set up yet. Run the full schema SQL from <code>docs/phase3-supabase-schema.sql</code> in the Supabase SQL Editor.</p>
+       </details>`
+    : '';
+
   container.innerHTML = `
     <div class="admin-login">
       <h1>BottleLore Admin</h1>
+      ${errorHint}
       <form id="login-form" class="admin-login__form">
         <label for="email">Email</label>
         <input type="email" id="email" name="email" required autocomplete="email" />

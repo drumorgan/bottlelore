@@ -4,8 +4,13 @@ import { parsePath, navigate } from './router.js';
 import { onAuthStateChange } from './supabase-gateway.js';
 import { setCurrentUser, resetAllState } from './state.js';
 
-// eslint-disable-next-line no-undef
-logger.info('BottleLore starting', { build: __BUILD_SHA__, time: __BUILD_TIME__ });
+// Build info is injected by Vite at compile time — use try/catch for dev/unbundled mode
+// (Safari/iPad throws ReferenceError on bare globals even with typeof guard)
+let buildSha = 'dev';
+let buildTime = 'dev';
+try { buildSha = __BUILD_SHA__; } catch { /* unbundled */ } // eslint-disable-line no-undef
+try { buildTime = __BUILD_TIME__; } catch { /* unbundled */ } // eslint-disable-line no-undef
+logger.info('BottleLore starting', { build: buildSha, time: buildTime });
 
 registerGlobalErrorHandlers();
 
