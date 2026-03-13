@@ -25,7 +25,72 @@ export async function render(container, view, options = {}) {
   }
 }
 
-function renderLogin(container) {
+async function renderLogin(container) {
+  container.innerHTML = '<div class="loading">Loading...</div>';
+
+  let needsBootstrap = false;
+  try {
+    needsBootstrap = await gateway.isBootstrapNeeded();
+  } catch (err) {
+    logger.error('Bootstrap check failed', err);
+  }
+
+  if (needsBootstrap) {
+    renderBootstrapForm(container);
+  } else {
+    renderSignInForm(container);
+  }
+}
+
+function renderBootstrapForm(container) {
+  container.innerHTML = `
+    <div class="admin-login">
+      <h1>BottleLore Setup</h1>
+      <p class="admin-login__hint">No admin account exists yet. Create the first super admin account below.</p>
+      <form id="bootstrap-form" class="admin-login__form">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required autocomplete="email" />
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password" />
+        <label for="confirm-password">Confirm Password</label>
+        <input type="password" id="confirm-password" name="confirm_password" required minlength="8" autocomplete="new-password" />
+        <button type="submit" class="btn btn--primary">Create Super Admin Account</button>
+      </form>
+    </div>
+  `;
+
+  document.getElementById('bootstrap-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const confirm = document.getElementById('confirm-password').value;
+
+    if (password !== confirm) {
+      showToast('Passwords do not match.', 'error');
+      return;
+    }
+
+    try {
+      const { session } = await gateway.signUp(email, password);
+
+      if (!session) {
+        showToast('Check your email to confirm your account, then sign in.', 'info');
+        renderSignInForm(e.target.closest('.admin-login').parentElement);
+        return;
+      }
+
+      await gateway.bootstrapSuperAdmin();
+      state.setSuperAdmin(true);
+      showToast('Super admin account created! You\'re all set.', 'success');
+      navigate('/admin/wines');
+    } catch (err) {
+      logger.error('Bootstrap failed', err);
+      showToast(err.message || 'Account creation failed. Please try again.', 'error');
+    }
+  });
+}
+
+function renderSignInForm(container) {
   container.innerHTML = `
     <div class="admin-login">
       <h1>BottleLore Admin</h1>
@@ -46,6 +111,14 @@ function renderLogin(container) {
 
     try {
       await gateway.signIn(email, password);
+
+      try {
+        const isSA = await gateway.checkIsSuperAdmin();
+        state.setSuperAdmin(isSA);
+      } catch (_) {
+        state.setSuperAdmin(false);
+      }
+
       navigate('/admin/wines');
     } catch (err) {
       logger.error('Login failed', err);
@@ -82,10 +155,12 @@ async function renderWineList(container) {
       </tr>
     `).join('');
 
+    const superBadge = state.isSuperAdmin() ? ' <span class="badge badge--super">Super Admin</span>' : '';
+
     container.innerHTML = `
       <div class="admin-wines">
         <header class="admin-wines__header">
-          <h1>${escapeHtml(adminData.wineries.name)} — Wines</h1>
+          <h1>${escapeHtml(adminData.wineries.name)} — Wines${superBadge}</h1>
           <button id="add-wine-btn" class="btn btn--primary">Add Wine</button>
           <button id="logout-btn" class="btn btn--secondary">Sign Out</button>
         </header>

@@ -22,6 +22,25 @@
   font-size: 1rem;
 }
 
+.admin-login__hint {
+  color: #555;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.4;
+}
+
+.badge--super {
+  display: inline-block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #6b2fa0;
+  color: #fff;
+  padding: 0.2em 0.6em;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
 /* ── Wine List ───────────────────────────────────────────────────────────── */
 
 .admin-wines__header {

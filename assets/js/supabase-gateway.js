@@ -28,6 +28,12 @@ function getClient() {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
+export async function signUp(email, password) {
+  const { data, error } = await getClient().auth.signUp({ email, password });
+  if (error) throw error;
+  return data;
+}
+
 export async function signIn(email, password) {
   const { data, error } = await getClient().auth.signInWithPassword({ email, password });
   if (error) throw error;
@@ -55,6 +61,25 @@ export function onAuthStateChange(callback) {
   return getClient().auth.onAuthStateChange((_event, session) => {
     callback(session?.user ?? null);
   });
+}
+
+// ── Bootstrap / Super Admin ───────────────────────────────────────────────────
+
+export async function isBootstrapNeeded() {
+  const { data, error } = await getClient().rpc('is_bootstrap_needed');
+  if (error) throw error;
+  return data;
+}
+
+export async function bootstrapSuperAdmin() {
+  const { error } = await getClient().rpc('bootstrap_super_admin');
+  if (error) throw error;
+}
+
+export async function checkIsSuperAdmin() {
+  const { data, error } = await getClient().rpc('is_super_admin');
+  if (error) throw error;
+  return data;
 }
 
 // ── Wineries ──────────────────────────────────────────────────────────────────
