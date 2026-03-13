@@ -509,7 +509,48 @@ $$ language plpgsql security definer;
 
 
 -- ============================================================================
--- STEP 15: Seed test data
+-- STEP 15: Bootstrap check — is setup needed? (callable by anon)
+-- ============================================================================
+
+create or replace function public.is_bootstrap_needed()
+returns boolean as $$
+begin
+    return not exists (select 1 from public.super_admins);
+end;
+$$ language plpgsql security definer stable;
+
+-- Allow anonymous users to call this (login page needs it before anyone signs in)
+grant execute on function public.is_bootstrap_needed() to anon;
+grant execute on function public.is_bootstrap_needed() to authenticated;
+
+
+-- ============================================================================
+-- STEP 16: Bootstrap — first user becomes super admin (one-time only)
+-- ============================================================================
+
+create or replace function public.bootstrap_super_admin()
+returns void as $$
+begin
+    -- Only works when no super admin exists yet
+    if exists (select 1 from public.super_admins) then
+        raise exception 'Bootstrap already complete — a super admin already exists.';
+    end if;
+
+    -- Caller must be authenticated
+    if auth.uid() is null then
+        raise exception 'You must be signed in to bootstrap.';
+    end if;
+
+    insert into public.super_admins (user_id) values (auth.uid());
+end;
+$$ language plpgsql security definer;
+
+-- Only authenticated users can attempt bootstrap
+grant execute on function public.bootstrap_super_admin() to authenticated;
+
+
+-- ============================================================================
+-- STEP 17: Seed test data
 -- ============================================================================
 
 -- Insert a test winery with full profile
@@ -592,7 +633,7 @@ values
 
 
 -- ============================================================================
--- STEP 16: Verify everything works
+-- STEP 18: Verify everything works
 -- ============================================================================
 
 -- Public view: active wines with winery info
@@ -624,14 +665,17 @@ order by f.sort_order, fw.sort_order;
 
 
 -- ============================================================================
--- POST-SETUP: Register yourself as super admin
+-- POST-SETUP: Create your super admin account
 -- ============================================================================
--- After you create your Supabase auth account and sign in once,
--- run this with your actual auth.users id:
+-- No manual SQL needed! The app handles this automatically:
 --
---   insert into public.super_admins (user_id)
---   values ('YOUR-AUTH-USER-UUID-HERE');
+--   1. Paste this entire file into Supabase SQL Editor → Run
+--   2. Open your app → go to /admin
+--   3. You'll see a one-time "Create Super Admin Account" form
+--   4. Enter your email + password → done, you're the super admin
+--   5. That form never appears again — from now on it's a normal login
 --
--- This is a one-time setup step. After this, you can do everything
--- else from the admin UI.
+-- Behind the scenes: the app calls bootstrap_super_admin() which only
+-- works when the super_admins table is empty. After you're registered,
+-- that function permanently refuses to run again.
 -- ============================================================================
