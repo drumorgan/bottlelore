@@ -133,7 +133,8 @@ function renderSignInForm(container, bootstrapError = null) {
       navigate('/admin/wines');
     } catch (err) {
       logger.error('Login failed', err);
-      showToast('Login failed. Check your credentials.', 'error');
+      const msg = err.message || 'Check your credentials.';
+      showToast(`Login failed: ${msg}`, 'error');
     }
   });
 }
