@@ -1,0 +1,3 @@
+<?php
+define('SUPABASE_URL', 'https://okfplzjguiyxzybcxkzn.supabase.co');
+define('SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rZnBsempndWl5eHp5YmN4a3puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTY2MjQsImV4cCI6MjA4ODkzMjYyNH0.wOy18MJGDqU-D61Z44nzeTjTXNG_2jj_eKlVUaAeP8s');
