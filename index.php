@@ -1,5 +1,5 @@
 <?php
-require_once 'api/config.php';
+require_once __DIR__ . '/api/config.php';
 
 // Read Vite manifest to get hashed bundle filename
 $manifestPath = __DIR__ . '/assets/dist/.vite/manifest.json';
