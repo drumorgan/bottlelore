@@ -54,3 +54,56 @@ Here's how that works:
 - **Scope your FTP accounts.** The deploy tool mirrors your repo to the server and deletes anything extra. If your FTP user has access to your entire server, that's a bad day waiting to happen.
 - **DNS takes time.** After pointing a domain, it can take minutes to hours for the change to propagate. Don't panic if the site doesn't load immediately.
 - **Start with hello world.** It's the simplest possible proof that the whole chain works: code in repo → GitHub Actions → FTP → live site. Once that's confirmed, you can build with confidence.
+
+---
+
+## Chapter 2: Wiring Up the Plumbing
+
+**Date:** March 12–13, 2026
+
+### Supabase: the database
+
+BottleLore needs a database to store wines, wineries, tasting notes — all the real data. We're using Supabase (a hosted Postgres service with a JS client library). The project already existed on Supabase from an earlier test; the task was getting the credentials wired into the app properly.
+
+The kickoff PDF specifies a "config pattern" — PHP reads credentials from environment variables (for production/CI) or a local config file (for development), then injects them into the page as `window.APP_CONFIG`. JavaScript never hardcodes API keys.
+
+We created `api/config.php` with a three-tier resolution: env vars → `config.local.php` → null. The `$appConfig` array carries supabase, sentry, and build metadata, and gets JSON-encoded into a `<script>` tag in `index.php`.
+
+### Sentry: error monitoring without DevTools
+
+Here's the thing about building for iPad: there's no console. No DevTools. If something breaks in production, you'd never know unless a user tells you — and they usually just leave. Sentry catches JavaScript errors automatically and reports them to a dashboard.
+
+Setup was straightforward:
+1. Created a new "bottlelore" project under the existing Sentry organization (which also hosts Yoink Adventures)
+2. Picked "Browser JavaScript" as the platform
+3. Got a Sentry key and DSN
+4. Updated `index.php` to conditionally load the Sentry CDN script when a DSN is configured
+
+The Sentry loader goes in the `<head>` before any application code — that way it catches errors even during app initialization.
+
+### Where we stand
+
+Here's what exists vs. what Phase 1 of the kickoff PDF requires:
+
+| File | Status |
+|------|--------|
+| CLAUDE.md | Done |
+| .github/workflows/deploy.yml | Done |
+| index.php | Done (Sentry + Vite manifest + APP_CONFIG) |
+| api/config.php | Done |
+| .htaccess | Exists — needs HTTPS redirect + Vite hashed bundle caching |
+| .gitignore | Exists — needs coverage/, config.local.php additions |
+| vite.config.js | Exists — needs git SHA, sourcemaps, entry/output tweaks |
+| package.json | Missing |
+| vitest.config.js | Missing |
+| eslint.config.js | Missing |
+| SECURITY-CHECKLIST.md | Missing |
+| Directory scaffolding | Missing (assets/js/, assets/css/, tests/, docs/) |
+
+Phase 1 is roughly half done. The infrastructure and config plumbing is in place. What's left is the build tooling (Vite/Vitest/ESLint config) and the empty directory skeleton that Phase 2 will fill with actual code.
+
+### Lessons for vibe coders
+
+- **Config injection beats hardcoded keys.** Having PHP inject credentials means the same codebase works in dev, CI, and production without any `.env` file gymnastics in JavaScript.
+- **Set up error monitoring early.** Sentry costs nothing for small projects and saves you from flying blind. Especially on iPad where you literally cannot open a console.
+- **One org, many projects.** You don't need separate Sentry accounts for each app. One organization can hold all your projects, and errors stay cleanly separated.
