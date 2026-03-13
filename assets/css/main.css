@@ -1,5 +1,10 @@
 /* BottleLore — Global Styles */
 
+/* ── FONTS ──────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cormorant+SC:wght@300;400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap');
+
+/* ── RESET ──────────────────────────────────────────────────────────────── */
+
 *,
 *::before,
 *::after {
@@ -13,8 +18,50 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* ── THEME VARIABLES ────────────────────────────────────────────────────── */
+
+:root {
+  --transition: 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.day {
+  --bg:           #f5efe4;
+  --bg-card:      #faf6ef;
+  --text-primary: #1c1208;
+  --text-winery:  #6b4c28;
+  --text-body:    #3d2e1a;
+  --text-muted:   #967c5e;
+  --accent:       #7a3b1e;
+  --accent-light: #c4813a;
+  --rule:         rgba(122,59,30,0.25);
+  --price-color:  #3d2e1a;
+  --grain-opacity: 0.04;
+  --shadow:       0 8px 48px rgba(60,30,10,0.13);
+  --ornament:     #c4813a;
+  --logo-color:   #967c5e;
+}
+
+.night {
+  --bg:           #131009;
+  --bg-card:      #1c1710;
+  --text-primary: #f0e6d0;
+  --text-winery:  #c9a87c;
+  --text-body:    #d4c4a8;
+  --text-muted:   #7a6a52;
+  --accent:       #c9a87c;
+  --accent-light: #e8c98a;
+  --rule:         rgba(201,168,124,0.2);
+  --price-color:  #f0e6d0;
+  --grain-opacity: 0.055;
+  --shadow:       0 8px 64px rgba(0,0,0,0.6);
+  --ornament:     #c9a87c;
+  --logo-color:   #5a4e3a;
+}
+
+/* ── BASE ───────────────────────────────────────────────────────────────── */
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Lora', Georgia, serif;
   line-height: 1.6;
   color: #1a1a1a;
   background: #fafafa;
