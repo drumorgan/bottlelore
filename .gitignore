@@ -1,7 +1,8 @@
 node_modules/
-.env
-.env.*
-!.env.example
 assets/dist/
+coverage/
+.env
+.env.local
+config.local.php
 *.log
 .DS_Store
