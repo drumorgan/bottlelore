@@ -234,14 +234,90 @@ Three CSS files, matching the structure:
 
 ---
 
-## What's Next: Phase 3
+## Chapter 4: Locking Down the Database
 
-Phase 3 sets up the Supabase database schema. The kickoff document specifies:
+**Date:** March 13, 2026
+**Goal:** Create the Supabase database schema — tables, Row Level Security, and test data — so the app has real data to talk to.
 
-1. Create tables (wineries, wines, winery_admins)
-2. Enable Row Level Security on all tables
-3. Create RLS policies (public read for guests, winery-scoped write for admins)
-4. Seed test data (a test winery with two wines)
-5. Verify public access works
+### Step 13: Create the database tables
 
-This is done in the Supabase SQL editor, not in the codebase.
+The kickoff document specifies three tables:
+
+| Table | Purpose |
+|-------|---------|
+| `wineries` | One row per winery. Has a slug for URL routing, a name, and an active flag |
+| `wines` | One row per wine. Links to a winery via `winery_id`. Stores everything a guest sees: name, varietal, vintage, tasting notes, price, food pairings |
+| `winery_admins` | Links a Supabase auth user to a winery. Controls who can manage which wines |
+
+All three use UUID primary keys (via `gen_random_uuid()`), have `created_at` timestamps, and use foreign key constraints with `on delete cascade` to keep data clean.
+
+The `winery_admins` table has a `role` column with a check constraint: only `'owner'` or `'staff'` are valid values. And a unique constraint on `(user_id, winery_id)` prevents duplicate assignments.
+
+**Vibe coder tip:** You don't need to understand every SQL keyword. The important thing is the *shape*: wineries have wines, admins belong to wineries. The SQL is in `docs/phase3-supabase-schema.sql` if you ever need to recreate it.
+
+### Step 14: Enable Row Level Security
+
+Row Level Security (RLS) is what makes Supabase safe to use with a public API key. Without RLS, anyone with the anon key could read, insert, update, or delete any row. With RLS enabled, every query is filtered through policies you define.
+
+We enabled RLS on all three tables. After this step, *no one* can access any data until we create policies — it's locked down by default.
+
+**Vibe coder tip:** "Enable RLS" means "deny everything unless a policy explicitly allows it." This is the right default. It's much safer to start locked and open specific doors than to start open and try to close them.
+
+### Step 15: Create RLS policies
+
+Six policies, each with a specific job:
+
+| Policy | Table | Who | What |
+|--------|-------|-----|------|
+| Public can view active wineries | wineries | Anyone (no login) | SELECT where `is_active = true` |
+| Admins can update own winery | wineries | Logged-in admin | UPDATE only if they're in `winery_admins` for that winery |
+| Public can view active wines | wines | Anyone (no login) | SELECT where `is_active = true` |
+| Admins can insert wines for own winery | wines | Logged-in admin | INSERT only if they're in `winery_admins` for that `winery_id` |
+| Admins can update wines for own winery | wines | Logged-in admin | UPDATE only if they're in `winery_admins` for that `winery_id` |
+| Admins can read own row | winery_admins | Logged-in user | SELECT only their own row (`user_id = auth.uid()`) |
+
+The key insight: **public SELECT policies have no auth check** — they use `is_active = true` as the only filter. This is what makes the QR scan bottle page work without login. All write policies check `auth.uid()` against the `winery_admins` table, ensuring admins can only touch their own winery's data.
+
+**Vibe coder tip:** Notice there's no DELETE policy anywhere. That's intentional — wines get soft-deleted by setting `is_active = false`. No data is ever permanently removed through the app. This is a safety net.
+
+### Step 16: Seed test data
+
+We inserted one test winery ("Test Winery" with slug `test-winery`) and two wines:
+
+1. **Estate Cabernet Sauvignon** — 2021 Napa Valley, $58/bottle. Grilled ribeye, aged cheddar, lamb chops.
+2. **Reserve Chardonnay** — 2022 Russian River Valley, $42/bottle. Pan-seared halibut, brie, roasted chicken.
+
+Both wines include full descriptions, tasting notes, and food pairings — the exact fields that the bottle page will display when a guest scans a QR code.
+
+### Step 17: Connect Supabase to the app
+
+The config pattern (from Chapter 2) already handles this. Two places need credentials:
+
+**For local development:** Create `config.local.php` in the project root with your Supabase URL and anon key. This file is git-ignored — it never leaves your machine.
+
+**For production:** Add `SUPABASE_URL` and `SUPABASE_ANON_KEY` as GitHub repository secrets. The deploy workflow passes these as environment variables, and `api/config.php` reads them with `getenv()`.
+
+The anon key is safe to expose in the browser — that's by design. RLS policies (Step 15) enforce all permissions. The `service_role` key must **never** appear in frontend code.
+
+### What we had at the end of Chapter 4
+
+- Three tables created: `wineries`, `wines`, `winery_admins`
+- Row Level Security enabled on all tables
+- Six RLS policies: public read for guests, winery-scoped write for admins
+- Test data: 1 winery, 2 wines with full tasting details
+- Supabase credentials documented for both local dev and production
+- Complete SQL saved in `docs/phase3-supabase-schema.sql`
+- **Phase 3: Complete**
+
+### Key lessons
+
+- **RLS is your security layer, not your app code.** Even if someone bypasses your UI entirely and calls the Supabase API directly, RLS ensures they can only do what the policies allow. The anon key is *meant* to be public — RLS is what makes that safe.
+- **Soft delete beats hard delete.** Setting `is_active = false` instead of deleting rows means you can always recover. The public SELECT policies filter on `is_active = true`, so deactivated wines disappear from the guest view instantly.
+- **Admin policies check winery ownership, not just "is logged in."** A logged-in user from Winery A cannot modify Winery B's wines. Every write policy joins against `winery_admins` to verify the relationship.
+- **The SQL is documentation.** We saved the complete schema in `docs/phase3-supabase-schema.sql`. If you ever need to recreate the database (new Supabase project, staging environment), you have the exact SQL ready to paste.
+
+---
+
+## What's Next: Phase 4
+
+Phase 4 updates the GitHub Actions deploy workflow to pass Supabase and Sentry credentials as environment variables in production. The deploy pipeline from Chapter 1 handles FTP — now it needs to inject the config secrets so the live site can talk to the database.
