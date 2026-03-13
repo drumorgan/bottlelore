@@ -7,6 +7,9 @@ const gitSha = (() => {
 })();
 
 export default defineConfig({
+  test: {
+    environment: 'jsdom',
+  },
   define: {
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
     __BUILD_SHA__: JSON.stringify(gitSha),
