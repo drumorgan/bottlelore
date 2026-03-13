@@ -1,0 +1,80 @@
+/* BottleLore — Bottle Page (public guest view) */
+
+.bottle-page {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+.bottle-page__header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.bottle-page__winery {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b2fa0;
+  margin-bottom: 0.25rem;
+}
+
+.bottle-page__name {
+  font-size: 1.75rem;
+  color: #1a1a1a;
+}
+
+.bottle-page__vintage {
+  display: inline-block;
+  margin-top: 0.25rem;
+  font-size: 1rem;
+  color: #666;
+}
+
+.bottle-page__details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9375rem;
+  color: #444;
+}
+
+.bottle-page__price {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.bottle-page__section {
+  margin-bottom: 1.5rem;
+}
+
+.bottle-page__section h3 {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b2fa0;
+  margin-bottom: 0.5rem;
+}
+
+.bottle-page__section p {
+  color: #333;
+  line-height: 1.7;
+}
+
+.bottle-page__pairings {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bottle-page__pairings li {
+  background: #f3e8ff;
+  color: #6b2fa0;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+}
