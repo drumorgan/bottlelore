@@ -35,7 +35,11 @@ if (file_exists($manifestPath)) {
 </head>
 <body>
     <div id="app">
-      <div id="loading">Loading...</div>
+      <div id="loading" style="font-family: system-ui, sans-serif; max-width: 480px; margin: 60px auto; padding: 0 20px;">
+        <h1>BottleLore</h1>
+        <p>Phase 1 complete — foundation is in place.</p>
+        <p style="color: #888; font-size: 0.9em;">Sentry: <?php echo !empty($sentryDsn) ? 'connected' : 'not configured'; ?> · Supabase: <?php echo !empty($supabaseUrl) ? 'configured' : 'not configured'; ?></p>
+      </div>
     </div>
 
     <!-- Load bundle (production) or dev modules -->
