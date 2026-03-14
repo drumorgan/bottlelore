@@ -33,9 +33,11 @@ async function route() {
         await render(app, view, { wineId: parsePath().wineId });
         break;
       }
-      case 'home':
-        navigate('/admin');
+      case 'home': {
+        const { render } = await import('./views/home.js');
+        await render(app);
         break;
+      }
       default:
         app.innerHTML = '<div class="not-found"><h1>404</h1><p>Page not found.</p></div>';
     }

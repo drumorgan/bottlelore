@@ -407,6 +407,105 @@ After this fix, the full build output — including `.vite/manifest.json` — re
 
 ---
 
+## Chapter 6: The Real Schema and the Bootstrap Saga
+
+**Date:** March 13–14, 2026
+**Goal:** Expand the database schema from a simple prototype to the real multi-role architecture, and get the first super admin account working.
+
+### Step 22: Expand the schema for multi-role access
+
+Chapter 4's schema was a starting point — three tables with simple RLS. But the real app needs a **three-tier permission model**: super admins (platform owners), winery owners, and winery staff. We also need flights (curated wine tasting sets).
+
+The expanded schema added:
+
+| New table / concept | Purpose |
+|---|---|
+| `super_admins` | Platform-level admin. You. One row with your auth user ID |
+| `flights` | A named group of wines (e.g., "Summer Tasting Flight") — belongs to a winery |
+| `flight_wines` | Join table linking wines to flights, with sort order |
+| `is_super_admin()` | SQL helper function — checks if `auth.uid()` is in `super_admins` |
+| `is_winery_admin()` | SQL helper — checks if current user admins a specific winery |
+| `is_winery_owner()` | SQL helper — checks if current user is an *owner* (not just staff) |
+| `link_user_to_winery()` | Function to safely link a user to a winery with role checks |
+
+The `wineries` table also got more profile fields: description, location, website, phone, hours, and social media links.
+
+### Step 23: Rewrite RLS policies for the three-tier model
+
+The original 6 policies became **30+ policies**. The key pattern:
+
+- **Public:** Can SELECT active records (wines, wineries, flights). No auth needed — this is what makes QR scan work.
+- **Super admin:** Can do everything. Every table has SELECT/INSERT/UPDATE policies that check `is_super_admin()`.
+- **Winery owner:** Full control of *their* winery — wines, flights, staff. Can't touch other wineries.
+- **Winery staff:** Can manage wines and flights for their winery, but can't change the winery profile or add other admins.
+
+The `flight_wines` join table also gets DELETE policies (unlike wines, which use soft-delete). Removing a wine from a flight is a real delete because the join row has no meaning on its own.
+
+**Vibe coder tip:** Helper functions like `is_super_admin()` are marked `security definer` — they run with elevated privileges so they can read the `super_admins` table even though RLS would normally block it. This is safe because the function only returns true/false, never exposes data.
+
+### Step 24: The bootstrap saga — and why we abandoned it
+
+The original plan was elegant: the first person to sign up automatically becomes the super admin. A database function `bootstrap_super_admin()` would insert the caller's `auth.uid()` into `super_admins`, but only if the table was empty. A companion function `is_bootstrap_needed()` let the login page check whether to show a "Create Account" form or a regular login form.
+
+**What actually happened:** A cascade of bugs, each fix revealing the next.
+
+1. **Dev mode crash.** The admin page referenced `__BUILD_SHA__` — a Vite build-time constant that doesn't exist when running unbundled. Safari/iPad crashed silently. *Fix: check if the variable is defined before using it.*
+
+2. **Bootstrap errors swallowed.** The bootstrap flow called Supabase but didn't surface errors in the UI. On iPad with no console, the signup appeared to succeed when it actually failed. *Fix: show the actual Supabase error in a toast.*
+
+3. **Login error message useless.** Failed logins showed a generic "Login failed" with no detail. *Fix: display the actual error message from Supabase (e.g., "Invalid login credentials").*
+
+4. **Wine list crash.** Super admins don't have a `winery_admins` row (they're in `super_admins` instead). The admin view assumed every logged-in user had a winery assignment and crashed when the query returned nothing. *Fix: detect super admin role and load all wines instead of filtering by winery.*
+
+5. **Email confirmation timing.** Supabase requires email confirmation by default. The bootstrap flow signed the user up, but the `bootstrap_super_admin()` call happened before the user confirmed their email — so `auth.uid()` was null. *Fix: defer bootstrap until after sign-in, checking for a pending flag.*
+
+6. **Bootstrap deadlock.** If the user existed in Supabase auth but the `super_admins` row wasn't created (because of bug #5), subsequent sign-ins would see "bootstrap not needed" (user exists) but the user had no admin role. Stuck in limbo. *Fix: check for the specific case where the user is authenticated but has no super_admin row.*
+
+7. **The final realization.** After fixing six bugs, we stepped back and asked: why is the app creating accounts at all? This is a private admin tool. The platform owner (you) has full access to the Supabase dashboard. **Just create the user directly in Supabase.**
+
+### Step 25: Remove bootstrap, do it the simple way
+
+We deleted all the bootstrap UI code from the admin view. The signup flow, the pending-bootstrap detection, the conditional form rendering — all gone. The admin page is now just a login form.
+
+**The simple setup process:**
+
+1. Run the schema SQL in Supabase SQL Editor (it includes `bootstrap_super_admin()` for reference, but you don't use it from the app)
+2. In Supabase → Authentication → Users → click "Add user"
+3. Enter your email and password, check "Auto Confirm User"
+4. Copy the new user's UUID
+5. In SQL Editor: `INSERT INTO public.super_admins (user_id) VALUES ('your-uuid-here');`
+6. Log in at `/admin` — done
+
+**Vibe coder tip:** Not everything needs to be automated. The bootstrap flow was 200+ lines of code, caused six bugs, and served a use case (first-time setup) that happens exactly once. Doing it manually in the Supabase dashboard takes 30 seconds and can't break. Sometimes the simplest solution is the best one.
+
+### Step 26: Password recovery
+
+After multiple test signups and password changes during the bootstrap debugging, the working password got lost. Recovery was straightforward:
+
+1. In Supabase → Authentication → Users, delete the old user
+2. Create a fresh user with "Add user" → new email/password → Auto Confirm
+3. Insert the new UUID into `super_admins`
+4. Log in successfully at `/admin`
+
+### What we had at the end of Chapter 6
+
+- Expanded schema: 6 tables, 30+ RLS policies, 4 helper functions, performance indexes
+- Three-tier permission model: super admin → winery owner → winery staff
+- Flights and flight-wines support for curated tasting experiences
+- Clean admin login page (no bootstrap complexity)
+- Super admin account created and working
+- Complete SQL saved in `docs/phase3-supabase-schema.sql`
+
+### Key lessons
+
+- **Don't automate one-time setup.** The bootstrap flow solved a problem that occurs exactly once per deployment. A 30-second manual step in the Supabase dashboard replaced 200+ lines of buggy code. Ask yourself: "How often does this happen?" If the answer is "once," just document the manual steps.
+- **Each bug fix can reveal the next.** The bootstrap saga was six bugs deep — each fix exposed a new failure mode. When you're that deep in a rabbit hole, consider whether the feature itself is the problem, not just the implementation.
+- **iPad debugging is hard.** Half these bugs were invisible without a console. The visible diagnostics panel (from Chapter 5) and toast error messages were the only way to diagnose issues. Never skip error surfacing in the UI.
+- **Security functions need `security definer`.** Helper functions like `is_super_admin()` need elevated privileges to read protected tables. Without `security definer`, RLS blocks the helper itself, and every policy that uses it silently returns false.
+- **The schema SQL is your safety net.** Having the complete schema in `docs/phase3-supabase-schema.sql` meant we could reason about the entire permission model in one place. When we needed to delete and recreate the user, the SQL was ready.
+
+---
+
 ## What's Next: Phase 4
 
-With the build pipeline working and the production bundle loading, the next step is verifying the app actually works end-to-end: can a guest scan a QR code and see wine details? Can an admin log in and manage wines? Time to test the full flow against the live Supabase database.
+The database is solid, the admin can log in, and the schema supports the full multi-role architecture. Next up is end-to-end testing: can a guest scan a QR code and see wine details? Can the admin create a new wine and see it appear on the bottle page? Time to test the real app against the live database and fix whatever breaks.
