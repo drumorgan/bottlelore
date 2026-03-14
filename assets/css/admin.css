@@ -1,5 +1,24 @@
 /* BottleLore — Admin Panel Styles */
 
+.admin-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.admin-loading__text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #6b2fa0;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 .admin-login {
   max-width: 400px;
   margin: 3rem auto;

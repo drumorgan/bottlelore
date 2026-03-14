@@ -26,6 +26,7 @@ async function route() {
 
   // Wait for Supabase to restore the session before rendering admin views
   if (view.startsWith('admin') && !isLoggedIn()) {
+    app.innerHTML = '<div class="admin-loading"><span class="admin-loading__text">BottleLore</span></div>';
     await authReadyPromise;
   }
 
@@ -69,13 +70,13 @@ async function route() {
 
 // Auth state listener — also tracks user in Sentry and detects role
 let authFired = false;
-onAuthStateChange((user) => {
+onAuthStateChange(async (user) => {
   if (user) {
     setCurrentUser(user);
     logger.setUser(user);
 
-    // Detect role in background — don't block initial route render
-    detectRole(user.id);
+    // Detect role BEFORE resolving authReady so views render with correct role
+    await detectRole(user.id);
   } else {
     resetAllState();
     logger.clearUser();
@@ -107,7 +108,7 @@ setTimeout(() => {
     authFired = true;
     authReady();
   }
-}, 3000);
+}, 1500);
 
 // Handle back/forward navigation
 window.addEventListener('popstate', route);
