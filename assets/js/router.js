@@ -1,12 +1,21 @@
 import * as logger from './logger.js';
 
 // Route shapes:
-//   /                        → home (or redirect to admin)
-//   /:winerySlug/:wineId     → public bottle page
-//   /admin                   → admin login
-//   /admin/wines             → admin wine list
-//   /admin/wines/new         → add wine
-//   /admin/wines/:id/edit    → edit wine
+//   /                                → home (or redirect to admin)
+//   /:winerySlug/:wineId             → public bottle page
+//   /admin                           → admin login
+//   /admin/wines                     → admin wine list
+//   /admin/wines/new                 → add wine
+//   /admin/wines/:id/edit            → edit wine
+//   /admin/wineries                  → super admin winery list
+//   /admin/wineries/new              → add winery
+//   /admin/wineries/:id/edit         → edit winery
+//   /admin/winery/profile            → owner edits own winery
+//   /admin/flights                   → flight list
+//   /admin/flights/new               → add flight
+//   /admin/flights/:id/edit          → edit flight
+//   /admin/staff                     → staff list
+//   /admin/staff/invite              → invite staff
 
 export function parsePath(pathname = window.location.pathname) {
   const parts = pathname.replace(/^\/|\/$/g, '').split('/');
@@ -17,11 +26,34 @@ export function parsePath(pathname = window.location.pathname) {
 
   if (parts[0] === 'admin') {
     if (parts.length === 1) return { view: 'admin-login' };
+
     if (parts[1] === 'wines') {
       if (parts.length === 2) return { view: 'admin-wines' };
       if (parts[2] === 'new') return { view: 'admin-wine-new' };
       if (parts[3] === 'edit') return { view: 'admin-wine-edit', wineId: parts[2] };
     }
+
+    if (parts[1] === 'wineries') {
+      if (parts.length === 2) return { view: 'admin-wineries' };
+      if (parts[2] === 'new') return { view: 'admin-winery-new' };
+      if (parts[3] === 'edit') return { view: 'admin-winery-edit', wineryId: parts[2] };
+    }
+
+    if (parts[1] === 'winery' && parts[2] === 'profile') {
+      return { view: 'admin-winery-profile' };
+    }
+
+    if (parts[1] === 'flights') {
+      if (parts.length === 2) return { view: 'admin-flights' };
+      if (parts[2] === 'new') return { view: 'admin-flight-new' };
+      if (parts[3] === 'edit') return { view: 'admin-flight-edit', flightId: parts[2] };
+    }
+
+    if (parts[1] === 'staff') {
+      if (parts.length === 2) return { view: 'admin-staff' };
+      if (parts[2] === 'invite') return { view: 'admin-staff-invite' };
+    }
+
     return { view: 'not-found' };
   }
 

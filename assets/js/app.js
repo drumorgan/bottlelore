@@ -2,7 +2,8 @@ import * as logger from './logger.js';
 import { registerGlobalErrorHandlers, showToast } from './utils.js';
 import { parsePath } from './router.js';
 import { onAuthStateChange } from './supabase-gateway.js';
-import { setCurrentUser, resetAllState, isLoggedIn } from './state.js';
+import { setCurrentUser, resetAllState, isLoggedIn, setUserRole, setSuperAdmin } from './state.js';
+import { checkIsSuperAdmin, getUserRole } from './supabase-gateway.js';
 
 // Build info is injected by Vite at compile time — use try/catch for dev/unbundled mode
 // (Safari/iPad throws ReferenceError on bare globals even with typeof guard)
@@ -37,7 +38,16 @@ async function route() {
       case 'admin-login':
       case 'admin-wines':
       case 'admin-wine-new':
-      case 'admin-wine-edit': {
+      case 'admin-wine-edit':
+      case 'admin-wineries':
+      case 'admin-winery-new':
+      case 'admin-winery-edit':
+      case 'admin-winery-profile':
+      case 'admin-flights':
+      case 'admin-flight-new':
+      case 'admin-flight-edit':
+      case 'admin-staff':
+      case 'admin-staff-invite': {
         const { render } = await import('./views/admin.js');
         await render(app, view, { wineId });
         break;
@@ -56,12 +66,26 @@ async function route() {
   }
 }
 
-// Auth state listener — also tracks user in Sentry
+// Auth state listener — also tracks user in Sentry and detects role
 let authFired = false;
-onAuthStateChange((user) => {
+onAuthStateChange(async (user) => {
   if (user) {
     setCurrentUser(user);
     logger.setUser(user);
+
+    // Detect role on session restore (login flow handles its own role detection)
+    try {
+      const isSA = await checkIsSuperAdmin();
+      setSuperAdmin(isSA);
+      if (isSA) {
+        setUserRole('super_admin');
+      } else {
+        const roleData = await getUserRole(user.id);
+        setUserRole(roleData ? roleData.role : 'staff');
+      }
+    } catch (err) {
+      logger.error('Role detection failed on auth restore', err);
+    }
   } else {
     resetAllState();
     logger.clearUser();
