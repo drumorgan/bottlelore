@@ -11,13 +11,20 @@ export async function render(container, winerySlug, wineId) {
   try {
     wine = await getWineById(wineId);
   } catch (err) {
-    logger.error('Failed to load wine', err, { wineId });
+    logger.error('Failed to load wine', err, { wineId, winerySlug });
     showToast('Could not load wine details.', 'error');
     container.innerHTML = '<div class="error-state"><h1>Wine not found</h1><p>This QR code may be invalid or the wine is no longer available.</p></div>';
     return;
   }
 
   const winery = wine.wineries || {};
+
+  // Validate that the URL slug matches the wine's actual winery
+  if (winery.slug && winery.slug !== winerySlug) {
+    logger.warn('Winery slug mismatch', { expected: winery.slug, got: winerySlug, wineId });
+    container.innerHTML = '<div class="error-state"><h1>Wine not found</h1><p>This QR code may be invalid or the wine is no longer available.</p></div>';
+    return;
+  }
   const pairings = (wine.food_pairings || []).map(p => `<li>${escapeHtml(p)}</li>`).join('');
 
   container.innerHTML = `
