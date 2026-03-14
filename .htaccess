@@ -1,5 +1,11 @@
-# Force HTTPS
+# Force HTTPS + normalize to www
 RewriteEngine On
+
+# Redirect non-www to www (before HTTPS check so both get fixed in one redirect)
+RewriteCond %{HTTP_HOST} ^bottlelore\.com$ [NC]
+RewriteRule ^(.*)$ https://www.bottlelore.com/$1 [L,R=301]
+
+# Force HTTPS (for www.bottlelore.com)
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
