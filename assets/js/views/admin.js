@@ -124,21 +124,27 @@ function renderSignInForm(container, bootstrapError = null) {
       await gateway.signIn(email, password);
 
       // Complete pending bootstrap if signUp happened before email confirmation
+      let bootstrapFailed = false;
       try {
         const stillNeedsBootstrap = await gateway.isBootstrapNeeded();
         if (stillNeedsBootstrap) {
           await gateway.bootstrapSuperAdmin();
           state.setSuperAdmin(true);
-          showToast('Super admin account created! You\'re all set.', 'success');
+          showToast('Super admin account created!', 'success');
         } else {
           const isSA = await gateway.checkIsSuperAdmin();
           state.setSuperAdmin(isSA);
         }
-      } catch (_) {
+      } catch (bsErr) {
+        logger.error('Post-login bootstrap/role check failed', bsErr);
+        showToast(`Setup error: ${bsErr.message || 'Could not verify admin role.'}`, 'error');
         state.setSuperAdmin(false);
+        bootstrapFailed = true;
       }
 
-      navigate('/admin/wines');
+      if (!bootstrapFailed) {
+        navigate('/admin/wines');
+      }
     } catch (err) {
       logger.error('Login failed', err);
       const msg = err.message || 'Check your credentials.';
