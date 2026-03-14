@@ -58,8 +58,16 @@ function renderBootstrapForm(container) {
         <input type="password" id="confirm-password" name="confirm_password" required minlength="8" autocomplete="new-password" />
         <button type="submit" class="btn btn--primary">Create Super Admin Account</button>
       </form>
+      <p style="margin-top:16px;text-align:center;font-size:0.9em;">
+        Already created an account? <a href="#" id="switch-to-signin">Sign in instead</a>
+      </p>
     </div>
   `;
+
+  document.getElementById('switch-to-signin').addEventListener('click', (e) => {
+    e.preventDefault();
+    renderSignInForm(container);
+  });
 
   document.getElementById('bootstrap-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -73,17 +81,40 @@ function renderBootstrapForm(container) {
     }
 
     try {
-      const { session } = await gateway.signUp(email, password);
+      // Try signUp first; if user already exists, fall back to signIn
+      let session = null;
+      try {
+        const signUpData = await gateway.signUp(email, password);
+        session = signUpData.session;
+      } catch (signUpErr) {
+        const msg = (signUpErr.message || '').toLowerCase();
+        if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('duplicate') || msg.includes('already exists')) {
+          logger.breadcrumb('signUp returned already-registered, falling back to signIn');
+          const signInData = await gateway.signIn(email, password);
+          session = signInData.session;
+        } else {
+          throw signUpErr;
+        }
+      }
 
+      // If signUp succeeded but no session (email confirmation pending),
+      // try signIn in case the user is already confirmed in Supabase
       if (!session) {
-        showToast('Check your email to confirm your account, then sign in.', 'info');
-        renderSignInForm(e.target.closest('.admin-login').parentElement);
-        return;
+        try {
+          logger.breadcrumb('signUp returned no session, attempting signIn fallback');
+          const signInData = await gateway.signIn(email, password);
+          session = signInData.session;
+        } catch (signInErr) {
+          // signIn also failed — email probably not confirmed yet
+          showToast('Account created. Check your email to confirm, then sign in.', 'info');
+          renderSignInForm(e.target.closest('.admin-login').parentElement);
+          return;
+        }
       }
 
       await gateway.bootstrapSuperAdmin();
       state.setSuperAdmin(true);
-      showToast('Super admin account created! You\'re all set.', 'success');
+      showToast('Super admin account created!', 'success');
       navigate('/admin/wines');
     } catch (err) {
       logger.error('Bootstrap failed', err);
