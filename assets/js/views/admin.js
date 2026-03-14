@@ -8,6 +8,7 @@ import { renderAdminNav } from '../components/admin-nav.js';
 import { renderWineryList, renderWineryForm } from './admin-wineries.js';
 import { renderWineryProfile } from './admin-winery-profile.js';
 import { renderFlightList, renderFlightForm } from './admin-flights.js';
+import { renderStaffList, renderInviteForm } from './admin-staff.js';
 
 export async function render(container, view, options = {}) {
   logger.breadcrumb(`render admin: ${view}`, 'view', options);
@@ -62,8 +63,10 @@ export async function render(container, view, options = {}) {
       await renderFlightForm(content, options.flightId);
       break;
     case 'admin-staff':
+      await renderStaffList(content);
+      break;
     case 'admin-staff-invite':
-      content.innerHTML = '<p>Staff management coming soon.</p>';
+      await renderInviteForm(content);
       break;
     default:
       content.innerHTML = '<p>Unknown admin view.</p>';
