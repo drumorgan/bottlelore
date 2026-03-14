@@ -43,21 +43,43 @@ export function renderAdminNav(container) {
   const items = NAV_ITEMS[role] || NAV_ITEMS.staff;
   const currentPath = window.location.pathname;
   const winery = state.getCurrentWinery();
-  const wineryName = winery ? escapeHtml(winery.name) : '';
   const roleBadgeClass = ROLE_BADGE_CLASS[role] || 'badge--staff';
   const roleLabel = ROLE_LABELS[role] || 'Staff';
+  const isSuperAdmin = role === 'super_admin';
 
   const navLinks = items.map(item => {
     const active = currentPath.startsWith(item.path) ? ' admin-nav__link--active' : '';
     return `<a href="${item.path}" class="admin-nav__link${active}" data-nav-path="${item.path}">${escapeHtml(item.label)}</a>`;
   }).join('');
 
+  // Super admin winery switcher — shows current winery context with dropdown
+  let wineryContext = '';
+  if (isSuperAdmin) {
+    const wineryList = state.getAdminWineryList();
+    if (wineryList.length > 0 && winery) {
+      const options = wineryList.map(w =>
+        `<option value="${escapeHtml(w.id)}" ${w.id === winery.id ? 'selected' : ''}>${escapeHtml(w.name)}</option>`
+      ).join('');
+      wineryContext = `
+        <div class="admin-nav__switcher">
+          <select id="winery-switcher" class="admin-nav__switcher-select" title="Switch winery context">
+            ${options}
+          </select>
+        </div>
+      `;
+    } else if (winery) {
+      wineryContext = `<span class="admin-nav__winery">${escapeHtml(winery.name)}</span>`;
+    }
+  } else if (winery) {
+    wineryContext = `<span class="admin-nav__winery">${escapeHtml(winery.name)}</span>`;
+  }
+
   container.innerHTML = `
     <div class="admin-layout">
       <nav class="admin-nav">
         <div class="admin-nav__brand">
           <span class="admin-nav__title">BottleLore</span>
-          ${wineryName ? `<span class="admin-nav__winery">${wineryName}</span>` : ''}
+          ${wineryContext}
           <span class="badge ${roleBadgeClass}">${escapeHtml(roleLabel)}</span>
         </div>
         <div class="admin-nav__links">${navLinks}</div>
@@ -74,6 +96,21 @@ export function renderAdminNav(container) {
       navigate(link.dataset.navPath);
     });
   });
+
+  // Winery switcher for super admins
+  const switcher = document.getElementById('winery-switcher');
+  if (switcher) {
+    switcher.addEventListener('change', () => {
+      const wineryList = state.getAdminWineryList();
+      const selected = wineryList.find(w => w.id === switcher.value);
+      if (selected) {
+        state.setCurrentWinery(selected);
+        // Re-render current view with new winery context
+        const path = window.location.pathname;
+        navigate(path);
+      }
+    });
+  }
 
   // Sign out
   document.getElementById('admin-signout-btn').addEventListener('click', async () => {

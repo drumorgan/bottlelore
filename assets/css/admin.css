@@ -101,6 +101,16 @@
   color: #555;
 }
 
+.admin-nav__switcher-select {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d0c4e0;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  max-width: 200px;
+}
+
 .admin-nav__links {
   display: flex;
   gap: 0.25rem;
