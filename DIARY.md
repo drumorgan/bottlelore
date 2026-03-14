@@ -506,6 +506,114 @@ After multiple test signups and password changes during the bootstrap debugging,
 
 ---
 
-## What's Next: Phase 4
+## Chapter 7: End-to-End Testing & Fixes
 
-The database is solid, the admin can log in, and the schema supports the full multi-role architecture. Next up is end-to-end testing: can a guest scan a QR code and see wine details? Can the admin create a new wine and see it appear on the bottle page? Time to test the real app against the live database and fix whatever breaks.
+**Date:** March 14, 2026
+**Goal:** Test every user flow end-to-end and fix what's broken. Wire in the QR code generator. Harden error handling.
+
+### Step 27: Test the guest QR scan flow
+
+We traced the full path from URL to rendered wine page: `/:winerySlug/:wineId` → router.js → bottle-page.js → supabase-gateway.js → Supabase. The flow worked but had a security gap — the winery slug in the URL was never validated against the wine's actual winery. A user could use any slug with any wine ID and still see the wine.
+
+**Fix:** Added winery slug validation in `bottle-page.js`. After fetching the wine, we now compare `wine.wineries.slug` against the URL's `winerySlug`. A mismatch shows "Wine not found" — preventing URL spoofing.
+
+### Step 28: Fix the admin auth race condition
+
+A critical bug: refreshing any admin page (`/admin/wines`, `/admin/wines/new`, etc.) would redirect to the login form — even when the user had a valid session. The root cause was a race condition:
+
+1. `app.js` sets up `onAuthStateChange()` (async — waits for Supabase to restore the session)
+2. `app.js` calls `route()` immediately
+3. Admin views check `state.isLoggedIn()` — which is still `false` because the auth callback hasn't fired yet
+4. Admin view redirects to `/admin`
+
+**Fix:** Created an `authReadyPromise` in `app.js` that resolves when the first `onAuthStateChange` event fires. Admin views now `await authReadyPromise` before checking login state. A 3-second timeout ensures the app doesn't hang if Supabase is unreachable.
+
+### Step 29: Fix the form.name collision
+
+A subtle but critical bug in the wine create/edit form: `form.name.value` on line 223 of admin.js was supposed to read the wine name input, but `HTMLFormElement.name` is an inherited property that returns the form's own `name` attribute (an empty string) — NOT the `<input name="name">` element. This meant `form.name.value` was `undefined`, and `.trim()` would throw a `TypeError`, crashing every wine save attempt.
+
+**Fix:** Replaced all `form.fieldName.value` accessors with explicit `document.getElementById('wine-name').value` calls. This is unambiguous and avoids the prototype property shadowing issue entirely.
+
+**Vibe coder tip:** HTML form elements have built-in properties like `name`, `action`, `method`, and `length` that shadow identically-named input elements. If you have an `<input name="name">` inside a form, `form.name` returns the form's own attribute, not the input. Use `getElementById` or `form.elements.namedItem()` to avoid this class of bugs.
+
+### Step 30: Wire the QR code generator into the admin panel
+
+The `qr-generator.js` component existed but wasn't connected to any view. We wired it into the admin panel in two places:
+
+1. **Wine list table** — Added a "QR" button next to each wine's "Edit" button. Clicking it opens a modal overlay with the generated QR code, the wine name as a title, and the full bottle URL displayed below. The modal closes by clicking "Close" or the backdrop.
+
+2. **Wine edit form** — When editing an existing wine, a QR code section appears below the form, showing the QR code and URL for that wine. This lets staff quickly scan or screenshot the QR code while reviewing wine details.
+
+Both use the `generateQR()` and `getBottleUrl()` functions from the existing component — no changes needed to the component itself.
+
+### Step 31: Add winery guard to the wine form
+
+Another bug: navigating directly to `/admin/wines/new` (e.g., via browser bookmark or page refresh) would crash because `state.getCurrentWinery()` was `null`. The winery is normally set by the wine list view, but direct navigation skips that step.
+
+**Fix:** The wine form now checks for a winery in state before rendering. If missing, it fetches the admin's winery (or falls back to the first winery for super admins) — the same logic used by the wine list. If no winery is found, it shows an error toast and redirects back.
+
+### Step 32: Add loading states and Sentry user tracking
+
+Two polish items:
+
+1. **Loading states on buttons** — Login and wine save buttons now disable and show "Signing in…" or "Saving…" while the async operation is in progress. On failure, they re-enable with the original text. This prevents double-submits and gives iPad users visible feedback.
+
+2. **Sentry user tracking** — `app.js` now calls `logger.setUser(user)` on login and `logger.clearUser()` on logout, so Sentry error reports include the user's ID and email. This was a gap — errors were being reported but with no user context.
+
+### Step 33: Fix redundant parsePath() call
+
+A minor bug in `app.js:33` — the admin route case was calling `parsePath()` a second time to extract `wineId`, despite it already being destructured on line 18. Fixed to use the existing `wineId` variable.
+
+### Step 34: Validate RLS policies
+
+Reviewed all 30+ RLS policies in `docs/phase3-supabase-schema.sql` against the app's data access patterns:
+
+| Flow | Policy | Status |
+|------|--------|--------|
+| Guest reads wine (public SELECT) | `is_active = true` filter, no auth | Correct |
+| Guest reads winery (public SELECT) | `is_active = true` filter, no auth | Correct |
+| Admin reads own wines | `is_winery_admin(winery_id)` check | Correct |
+| Admin creates wine | `is_winery_admin(winery_id)` check on INSERT | Correct |
+| Admin updates wine | `is_winery_admin(winery_id)` check on UPDATE | Correct |
+| Super admin full access | `is_super_admin()` on all tables | Correct |
+| Cross-winery isolation | Admin can only modify wines for their winery | Correct |
+| No DELETE policies on wines | Intentional — soft-delete via `is_active` | Correct |
+
+All RLS policies are sound. The three-tier model (public → winery admin → super admin) is correctly enforced at the database level.
+
+### Step 35: Verify error handling
+
+All error paths surface via `showToast()`:
+
+| Error scenario | Handler | Toast? |
+|---|---|---|
+| Wine not found (invalid QR) | bottle-page.js catch block | Yes |
+| Login failed | admin.js login catch | Yes |
+| Wine save failed | admin.js form submit catch | Yes |
+| Wine list load failed | admin.js renderWineList catch | Yes |
+| QR generation failed | qr-generator.js catch | Yes |
+| Route render failed | app.js route() catch | Yes |
+| Unhandled promise rejection | utils.js global handler | Logged (Sentry) |
+| Global JS error | utils.js global handler | Logged (Sentry) |
+
+No `console.*` calls exist outside of `logger.js`. All user-facing errors use `showToast()`.
+
+### What was fixed in Phase 7
+
+| Bug | Severity | Fix |
+|-----|----------|-----|
+| `form.name.value` crashes wine save | Critical | Use `getElementById` for all form field access |
+| Admin pages redirect on refresh | Critical | `authReadyPromise` waits for session restore |
+| Direct nav to wine form crashes (no winery) | High | Fetch winery if not in state |
+| QR generator not integrated | High | Added to wine list (modal) and edit form |
+| Winery slug not validated in bottle page | Medium | Compare URL slug to wine's winery slug |
+| Redundant `parsePath()` call | Low | Use already-destructured variable |
+| No Sentry user context | Low | Call `logger.setUser()`/`clearUser()` on auth |
+| No loading states on buttons | Low | Disable + text change during async ops |
+
+### Key lessons
+
+- **`HTMLFormElement.name` is a trap.** It's one of several built-in form properties (`name`, `action`, `method`, `length`) that shadow identically-named input elements. Always use `getElementById` or `form.elements.namedItem()` for disambiguation.
+- **Auth state is async.** On page load, Supabase needs time to restore the session from storage. Any code that checks "is the user logged in?" during initialization must wait for the auth state to resolve first. A promise-based gate pattern handles this cleanly.
+- **Wire features end-to-end, not just write them.** The QR generator component was complete but never imported by any view. A component that exists but isn't used is the same as a component that doesn't exist.
+- **Direct navigation breaks assumptions.** SPAs often set state incrementally as users navigate through screens. But users can bookmark or refresh any URL. Every view must handle being the entry point — not just the happy path from the previous screen.

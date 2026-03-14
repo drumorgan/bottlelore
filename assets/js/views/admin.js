@@ -3,6 +3,7 @@ import { escapeHtml, showToast } from '../utils.js';
 import { navigate } from '../router.js';
 import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
+import { generateQR, getBottleUrl } from '../components/qr-generator.js';
 
 export async function render(container, view, options = {}) {
   logger.breadcrumb(`render admin: ${view}`, 'view', options);
@@ -43,6 +44,10 @@ function renderLogin(container) {
     e.preventDefault();
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Signing in…';
 
     try {
       await gateway.signIn(email, password);
@@ -60,6 +65,8 @@ function renderLogin(container) {
       logger.error('Login failed', err);
       const msg = err.message || 'Check your credentials.';
       showToast(`Login failed: ${msg}`, 'error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Sign In';
     }
   });
 }
@@ -120,6 +127,7 @@ async function renderWineList(container) {
         <td>${escapeHtml(w.price || '')}</td>
         <td>
           <button class="btn btn--small" data-edit="${escapeHtml(w.id)}">Edit</button>
+          <button class="btn btn--small btn--outline" data-qr="${escapeHtml(w.id)}" data-slug="${escapeHtml(winery.slug)}">QR</button>
         </td>
       </tr>
     `).join('');
@@ -139,6 +147,15 @@ async function renderWineList(container) {
           </thead>
           <tbody>${rows}</tbody>
         </table>
+        <div id="qr-modal" class="qr-modal" hidden>
+          <div class="qr-modal__backdrop"></div>
+          <div class="qr-modal__content">
+            <h2 id="qr-modal-title">QR Code</h2>
+            <div id="qr-modal-canvas"></div>
+            <p id="qr-modal-url" class="qr-modal__url"></p>
+            <button id="qr-modal-close" class="btn btn--secondary">Close</button>
+          </div>
+        </div>
       </div>
     `;
 
@@ -151,6 +168,26 @@ async function renderWineList(container) {
     container.querySelectorAll('[data-edit]').forEach(btn => {
       btn.addEventListener('click', () => navigate(`/admin/wines/${btn.dataset.edit}/edit`));
     });
+
+    // QR code modal
+    const qrModal = document.getElementById('qr-modal');
+    container.querySelectorAll('[data-qr]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const wineId = btn.dataset.qr;
+        const slug = btn.dataset.slug;
+        const url = getBottleUrl(slug, wineId);
+        const w = wines.find(x => x.id === wineId);
+
+        document.getElementById('qr-modal-title').textContent = w ? w.name : 'QR Code';
+        document.getElementById('qr-modal-url').textContent = url;
+        document.getElementById('qr-modal-canvas').innerHTML = '';
+
+        qrModal.hidden = false;
+        await generateQR(document.getElementById('qr-modal-canvas'), url);
+      });
+    });
+    document.getElementById('qr-modal-close').addEventListener('click', () => { qrModal.hidden = true; });
+    document.querySelector('.qr-modal__backdrop').addEventListener('click', () => { qrModal.hidden = true; });
   } catch (err) {
     logger.error('Failed to load wines', err);
     showToast('Could not load wine list.', 'error');
@@ -161,6 +198,35 @@ async function renderWineForm(container, wineId) {
   if (!state.isLoggedIn()) {
     navigate('/admin');
     return;
+  }
+
+  // Ensure winery is in state (handles direct navigation to /admin/wines/new)
+  if (!state.getCurrentWinery()) {
+    try {
+      const user = state.getCurrentUser();
+      let winery = null;
+      try {
+        const adminData = await gateway.getAdminWinery(user.id);
+        winery = adminData.wineries;
+      } catch (_) {
+        if (state.isSuperAdmin()) {
+          const allWineries = await gateway.getAllWineries();
+          if (allWineries.length > 0) winery = allWineries[0];
+        }
+      }
+      if (winery) {
+        state.setCurrentWinery(winery);
+      } else {
+        showToast('No winery found. Cannot manage wines.', 'error');
+        navigate('/admin/wines');
+        return;
+      }
+    } catch (err) {
+      logger.error('Failed to load winery for wine form', err);
+      showToast('Could not load winery.', 'error');
+      navigate('/admin/wines');
+      return;
+    }
   }
 
   let wine = null;
@@ -209,28 +275,46 @@ async function renderWineForm(container, wineId) {
         <button type="submit" class="btn btn--primary">${isEdit ? 'Save Changes' : 'Create Wine'}</button>
         <button type="button" id="cancel-btn" class="btn btn--secondary">Cancel</button>
       </form>
+      ${isEdit ? `
+      <section class="admin-wine-form__qr">
+        <h2>QR Code</h2>
+        <div id="wine-qr-container"></div>
+        <p id="wine-qr-url" class="qr-modal__url"></p>
+      </section>` : ''}
     </div>
   `;
 
   document.getElementById('cancel-btn').addEventListener('click', () => navigate('/admin/wines'));
 
+  // Render QR code for existing wines
+  if (isEdit) {
+    const winery = state.getCurrentWinery();
+    const url = getBottleUrl(winery.slug, wine.id);
+    document.getElementById('wine-qr-url').textContent = url;
+    generateQR(document.getElementById('wine-qr-container'), url);
+  }
+
   document.getElementById('wine-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const form = e.target;
     const winery = state.getCurrentWinery();
+    const submitBtn = e.target.querySelector('button[type="submit"]');
 
+    // Use getElementById — form.name conflicts with HTMLFormElement.name property
     const data = {
-      name: form.name.value.trim(),
-      varietal: form.varietal.value.trim() || null,
-      vintage_year: form.vintage_year.value ? parseInt(form.vintage_year.value, 10) : null,
-      region: form.region.value.trim() || null,
-      price: form.price.value.trim() || null,
-      description: form.description.value.trim() || null,
-      tasting_notes: form.tasting_notes.value.trim() || null,
-      food_pairings: form.food_pairings.value
-        ? form.food_pairings.value.split(',').map(s => s.trim()).filter(Boolean)
+      name: document.getElementById('wine-name').value.trim(),
+      varietal: document.getElementById('wine-varietal').value.trim() || null,
+      vintage_year: document.getElementById('wine-vintage').value ? parseInt(document.getElementById('wine-vintage').value, 10) : null,
+      region: document.getElementById('wine-region').value.trim() || null,
+      price: document.getElementById('wine-price').value.trim() || null,
+      description: document.getElementById('wine-description').value.trim() || null,
+      tasting_notes: document.getElementById('wine-tasting-notes').value.trim() || null,
+      food_pairings: document.getElementById('wine-pairings').value
+        ? document.getElementById('wine-pairings').value.split(',').map(s => s.trim()).filter(Boolean)
         : [],
     };
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving…';
 
     try {
       if (isEdit) {
@@ -245,6 +329,8 @@ async function renderWineForm(container, wineId) {
     } catch (err) {
       logger.error('Failed to save wine', err);
       showToast('Could not save wine. Please try again.', 'error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = isEdit ? 'Save Changes' : 'Create Wine';
     }
   });
 }

@@ -1,8 +1,8 @@
 import * as logger from './logger.js';
 import { registerGlobalErrorHandlers, showToast } from './utils.js';
-import { parsePath, navigate } from './router.js';
+import { parsePath } from './router.js';
 import { onAuthStateChange } from './supabase-gateway.js';
-import { setCurrentUser, resetAllState } from './state.js';
+import { setCurrentUser, resetAllState, isLoggedIn } from './state.js';
 
 // Build info is injected by Vite at compile time — use try/catch for dev/unbundled mode
 // (Safari/iPad throws ReferenceError on bare globals even with typeof guard)
@@ -14,9 +14,18 @@ logger.info('BottleLore starting', { build: buildSha, time: buildTime });
 
 registerGlobalErrorHandlers();
 
+// Resolved once the first auth state event fires (session restored or no session)
+let authReady;
+const authReadyPromise = new Promise((resolve) => { authReady = resolve; });
+
 async function route() {
   const { view, winerySlug, wineId } = parsePath();
   const app = document.getElementById('app');
+
+  // Wait for Supabase to restore the session before rendering admin views
+  if (view.startsWith('admin') && !isLoggedIn()) {
+    await authReadyPromise;
+  }
 
   try {
     switch (view) {
@@ -30,7 +39,7 @@ async function route() {
       case 'admin-wine-new':
       case 'admin-wine-edit': {
         const { render } = await import('./views/admin.js');
-        await render(app, view, { wineId: parsePath().wineId });
+        await render(app, view, { wineId });
         break;
       }
       case 'home': {
@@ -47,14 +56,29 @@ async function route() {
   }
 }
 
-// Auth state listener
+// Auth state listener — also tracks user in Sentry
+let authFired = false;
 onAuthStateChange((user) => {
   if (user) {
     setCurrentUser(user);
+    logger.setUser(user);
   } else {
     resetAllState();
+    logger.clearUser();
+  }
+  if (!authFired) {
+    authFired = true;
+    authReady();
   }
 });
+
+// Safety: if onAuthStateChange never fires (e.g. network down), resolve after timeout
+setTimeout(() => {
+  if (!authFired) {
+    authFired = true;
+    authReady();
+  }
+}, 3000);
 
 // Handle back/forward navigation
 window.addEventListener('popstate', route);
