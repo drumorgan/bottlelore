@@ -25,86 +25,10 @@ export async function render(container, view, options = {}) {
   }
 }
 
-async function renderLogin(container) {
-  container.innerHTML = '<div class="loading">Loading...</div>';
-
-  let needsBootstrap = false;
-  let bootstrapError = null;
-  try {
-    needsBootstrap = await gateway.isBootstrapNeeded();
-  } catch (err) {
-    logger.error('Bootstrap check failed', err);
-    bootstrapError = err;
-  }
-
-  if (needsBootstrap) {
-    renderBootstrapForm(container);
-  } else {
-    renderSignInForm(container, bootstrapError);
-  }
-}
-
-function renderBootstrapForm(container) {
-  container.innerHTML = `
-    <div class="admin-login">
-      <h1>BottleLore Setup</h1>
-      <p class="admin-login__hint">No admin account exists yet. Create the first super admin account below.</p>
-      <form id="bootstrap-form" class="admin-login__form">
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" required autocomplete="email" />
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password" />
-        <label for="confirm-password">Confirm Password</label>
-        <input type="password" id="confirm-password" name="confirm_password" required minlength="8" autocomplete="new-password" />
-        <button type="submit" class="btn btn--primary">Create Super Admin Account</button>
-      </form>
-    </div>
-  `;
-
-  document.getElementById('bootstrap-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const confirm = document.getElementById('confirm-password').value;
-
-    if (password !== confirm) {
-      showToast('Passwords do not match.', 'error');
-      return;
-    }
-
-    try {
-      const { session } = await gateway.signUp(email, password);
-
-      if (!session) {
-        showToast('Check your email to confirm your account, then sign in.', 'info');
-        renderSignInForm(e.target.closest('.admin-login').parentElement);
-        return;
-      }
-
-      await gateway.bootstrapSuperAdmin();
-      state.setSuperAdmin(true);
-      showToast('Super admin account created! You\'re all set.', 'success');
-      navigate('/admin/wines');
-    } catch (err) {
-      logger.error('Bootstrap failed', err);
-      showToast(err.message || 'Account creation failed. Please try again.', 'error');
-    }
-  });
-}
-
-function renderSignInForm(container, bootstrapError = null) {
-  const errorHint = bootstrapError
-    ? `<details class="admin-login__diag" style="margin-bottom:16px;font-size:0.85em;color:#c44;">
-         <summary>Setup issue detected</summary>
-         <p style="margin:8px 0;">The bootstrap check failed: <strong>${escapeHtml(bootstrapError.message || String(bootstrapError))}</strong></p>
-         <p>If this is a fresh install, the database functions may not be set up yet. Run the full schema SQL from <code>docs/phase3-supabase-schema.sql</code> in the Supabase SQL Editor.</p>
-       </details>`
-    : '';
-
+function renderLogin(container) {
   container.innerHTML = `
     <div class="admin-login">
       <h1>BottleLore Admin</h1>
-      ${errorHint}
       <form id="login-form" class="admin-login__form">
         <label for="email">Email</label>
         <input type="email" id="email" name="email" required autocomplete="email" />
@@ -123,28 +47,15 @@ function renderSignInForm(container, bootstrapError = null) {
     try {
       await gateway.signIn(email, password);
 
-      // Complete pending bootstrap if signUp happened before email confirmation
-      let bootstrapFailed = false;
       try {
-        const stillNeedsBootstrap = await gateway.isBootstrapNeeded();
-        if (stillNeedsBootstrap) {
-          await gateway.bootstrapSuperAdmin();
-          state.setSuperAdmin(true);
-          showToast('Super admin account created!', 'success');
-        } else {
-          const isSA = await gateway.checkIsSuperAdmin();
-          state.setSuperAdmin(isSA);
-        }
-      } catch (bsErr) {
-        logger.error('Post-login bootstrap/role check failed', bsErr);
-        showToast(`Setup error: ${bsErr.message || 'Could not verify admin role.'}`, 'error');
+        const isSA = await gateway.checkIsSuperAdmin();
+        state.setSuperAdmin(isSA);
+      } catch (roleErr) {
+        logger.error('Role check failed', roleErr);
         state.setSuperAdmin(false);
-        bootstrapFailed = true;
       }
 
-      if (!bootstrapFailed) {
-        navigate('/admin/wines');
-      }
+      navigate('/admin/wines');
     } catch (err) {
       logger.error('Login failed', err);
       const msg = err.message || 'Check your credentials.';
