@@ -409,7 +409,9 @@
   .admin-wines__table th:nth-child(3),
   .admin-wines__table td:nth-child(3),
   .admin-wines__table th:nth-child(4),
-  .admin-wines__table td:nth-child(4) {
+  .admin-wines__table td:nth-child(4),
+  .admin-wines__table th:nth-child(5),
+  .admin-wines__table td:nth-child(5) {
     display: none;
   }
 

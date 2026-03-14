@@ -157,6 +157,10 @@ export async function updateWine(id, wineData) {
   return data;
 }
 
+export async function toggleWineActive(id, isActive) {
+  return updateWine(id, { is_active: isActive });
+}
+
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
 export async function getAdminWinery(userId) {

@@ -162,13 +162,21 @@ async function renderWineList(container) {
     state.setWines(wines);
 
     const rows = wines.map(w => `
-      <tr>
+      <tr class="${w.is_active === false ? 'row--inactive' : ''}">
         <td>${escapeHtml(w.name)}</td>
         <td>${escapeHtml(w.varietal || '')}</td>
         <td>${escapeHtml(w.vintage_year ? String(w.vintage_year) : '')}</td>
         <td>${escapeHtml(w.price || '')}</td>
         <td>
+          <span class="badge ${w.is_active === false ? 'badge--inactive' : 'badge--active'}">
+            ${w.is_active === false ? 'Inactive' : 'Active'}
+          </span>
+        </td>
+        <td class="admin-table__actions">
           <button class="btn btn--small" data-edit="${escapeHtml(w.id)}">Edit</button>
+          <button class="btn btn--small btn--outline" data-toggle-wine="${escapeHtml(w.id)}" data-active="${w.is_active !== false}">
+            ${w.is_active === false ? 'Activate' : 'Deactivate'}
+          </button>
           <button class="btn btn--small btn--outline" data-qr="${escapeHtml(w.id)}" data-slug="${escapeHtml(winery.slug)}">QR</button>
         </td>
       </tr>
@@ -181,7 +189,7 @@ async function renderWineList(container) {
       </header>
       <table class="admin-wines__table">
         <thead>
-          <tr><th>Name</th><th>Varietal</th><th>Vintage</th><th>Price</th><th></th></tr>
+          <tr><th>Name</th><th>Varietal</th><th>Vintage</th><th>Price</th><th>Status</th><th></th></tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
@@ -199,6 +207,27 @@ async function renderWineList(container) {
     document.getElementById('add-wine-btn').addEventListener('click', () => navigate('/admin/wines/new'));
     container.querySelectorAll('[data-edit]').forEach(btn => {
       btn.addEventListener('click', () => navigate(`/admin/wines/${btn.dataset.edit}/edit`));
+    });
+
+    // Active/inactive toggle
+    container.querySelectorAll('[data-toggle-wine]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const wineId = btn.dataset.toggleWine;
+        const currentlyActive = btn.dataset.active === 'true';
+        const wine = wines.find(x => x.id === wineId);
+        const action = currentlyActive ? 'deactivate' : 'activate';
+
+        if (currentlyActive && !confirm(`Are you sure you want to deactivate "${wine?.name}"? It will no longer be visible to guests.`)) return;
+
+        try {
+          await gateway.toggleWineActive(wineId, !currentlyActive);
+          showToast(`Wine ${action}d.`, 'success');
+          await renderWineList(container);
+        } catch (err) {
+          logger.error('Failed to toggle wine', err);
+          showToast(`Could not ${action} wine.`, 'error');
+        }
+      });
     });
 
     // QR code modal
