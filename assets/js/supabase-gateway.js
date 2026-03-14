@@ -143,3 +143,28 @@ export async function getAdminWinery(userId) {
   if (error) throw error;
   return data;
 }
+
+/**
+ * Returns { role, winery_id } for the given user, or null if no row exists.
+ */
+export async function getUserRole(userId) {
+  const { data, error } = await getClient()
+    .from(TABLES.WINERY_ADMINS)
+    .select('role, winery_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * All wineries (including inactive) for super admin management.
+ */
+export async function getAllWineriesAdmin() {
+  const { data, error } = await getClient()
+    .from(TABLES.WINERIES)
+    .select('*')
+    .order('name');
+  if (error) throw error;
+  return data;
+}

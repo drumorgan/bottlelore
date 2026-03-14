@@ -4,25 +4,83 @@ import { navigate } from '../router.js';
 import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
 import { generateQR, getBottleUrl } from '../components/qr-generator.js';
+import { renderAdminNav } from '../components/admin-nav.js';
 
 export async function render(container, view, options = {}) {
   logger.breadcrumb(`render admin: ${view}`, 'view', options);
 
+  // Login view — no nav wrapper
+  if (view === 'admin-login') {
+    renderLogin(container);
+    return;
+  }
+
+  // All other admin views require auth
+  if (!state.isLoggedIn()) {
+    navigate('/admin');
+    return;
+  }
+
+  // Ensure winery is loaded for views that need it
+  await ensureWineryLoaded();
+
+  // Render nav shell and get content area
+  const content = renderAdminNav(container);
+
   switch (view) {
-    case 'admin-login':
-      renderLogin(container);
-      break;
     case 'admin-wines':
-      await renderWineList(container);
+      await renderWineList(content);
       break;
     case 'admin-wine-new':
-      renderWineForm(container, null);
+      renderWineForm(content, null);
       break;
     case 'admin-wine-edit':
-      await renderWineForm(container, options.wineId);
+      await renderWineForm(content, options.wineId);
+      break;
+    // Placeholder views for future phases
+    case 'admin-wineries':
+    case 'admin-winery-new':
+    case 'admin-winery-edit':
+      content.innerHTML = '<p>Winery management coming soon.</p>';
+      break;
+    case 'admin-winery-profile':
+      content.innerHTML = '<p>Winery profile editing coming soon.</p>';
+      break;
+    case 'admin-flights':
+    case 'admin-flight-new':
+    case 'admin-flight-edit':
+      content.innerHTML = '<p>Flight management coming soon.</p>';
+      break;
+    case 'admin-staff':
+    case 'admin-staff-invite':
+      content.innerHTML = '<p>Staff management coming soon.</p>';
       break;
     default:
-      container.innerHTML = '<p>Unknown admin view.</p>';
+      content.innerHTML = '<p>Unknown admin view.</p>';
+  }
+}
+
+/**
+ * Ensure winery is loaded in state (handles direct-navigation cases).
+ */
+async function ensureWineryLoaded() {
+  if (state.getCurrentWinery()) return;
+
+  try {
+    const user = state.getCurrentUser();
+    let winery = null;
+    try {
+      const adminData = await gateway.getAdminWinery(user.id);
+      winery = adminData.wineries;
+    } catch (_) {
+      if (state.isSuperAdmin()) {
+        const allWineries = await gateway.getAllWineries();
+        if (allWineries.length > 0) winery = allWineries[0];
+      }
+    }
+    if (winery) state.setCurrentWinery(winery);
+  } catch (err) {
+    logger.error('Failed to load winery context', err);
   }
 }
 
@@ -50,17 +108,30 @@ function renderLogin(container) {
     submitBtn.textContent = 'Signing in…';
 
     try {
-      await gateway.signIn(email, password);
+      const authData = await gateway.signIn(email, password);
+      const userId = authData.user.id;
 
+      // Detect role
+      let isSA = false;
       try {
-        const isSA = await gateway.checkIsSuperAdmin();
-        state.setSuperAdmin(isSA);
+        isSA = await gateway.checkIsSuperAdmin();
       } catch (roleErr) {
-        logger.error('Role check failed', roleErr);
-        state.setSuperAdmin(false);
+        logger.error('Super admin check failed', roleErr);
       }
+      state.setSuperAdmin(isSA);
 
-      navigate('/admin/wines');
+      if (isSA) {
+        state.setUserRole('super_admin');
+        navigate('/admin/wineries');
+      } else {
+        const roleData = await gateway.getUserRole(userId);
+        if (roleData) {
+          state.setUserRole(roleData.role);
+        } else {
+          state.setUserRole('staff');
+        }
+        navigate('/admin/wines');
+      }
     } catch (err) {
       logger.error('Login failed', err);
       const msg = err.message || 'Check your credentials.';
@@ -72,49 +143,15 @@ function renderLogin(container) {
 }
 
 async function renderWineList(container) {
-  if (!state.isLoggedIn()) {
-    navigate('/admin');
-    return;
-  }
-
   container.innerHTML = '<div class="loading">Loading wines...</div>';
 
   try {
-    const user = state.getCurrentUser();
-    let winery = null;
-
-    // Super admins may not have a winery_admins row — fall back to getAllWineries
-    try {
-      const adminData = await gateway.getAdminWinery(user.id);
-      winery = adminData.wineries;
-    } catch (_) {
-      if (state.isSuperAdmin()) {
-        const allWineries = await gateway.getAllWineries();
-        if (allWineries.length > 0) {
-          winery = allWineries[0];
-        }
-      }
-    }
+    const winery = state.getCurrentWinery();
 
     if (!winery) {
-      container.innerHTML = `
-        <div class="admin-wines">
-          <header class="admin-wines__header">
-            <h1>No Winery Found</h1>
-            <button id="logout-btn" class="btn btn--secondary">Sign Out</button>
-          </header>
-          <p>You are not assigned to any winery. A super admin needs to create a winery and assign you to it.</p>
-        </div>
-      `;
-      document.getElementById('logout-btn').addEventListener('click', async () => {
-        await gateway.signOut();
-        state.resetAllState();
-        navigate('/admin');
-      });
+      container.innerHTML = '<p>You are not assigned to any winery. A super admin needs to create a winery and assign you to it.</p>';
       return;
     }
-
-    state.setCurrentWinery(winery);
 
     const wines = await gateway.getWinesByWinery(winery.id);
     state.setWines(wines);
@@ -132,39 +169,29 @@ async function renderWineList(container) {
       </tr>
     `).join('');
 
-    const superBadge = state.isSuperAdmin() ? ' <span class="badge badge--super">Super Admin</span>' : '';
-
     container.innerHTML = `
-      <div class="admin-wines">
-        <header class="admin-wines__header">
-          <h1>${escapeHtml(winery.name)} — Wines${superBadge}</h1>
-          <button id="add-wine-btn" class="btn btn--primary">Add Wine</button>
-          <button id="logout-btn" class="btn btn--secondary">Sign Out</button>
-        </header>
-        <table class="admin-wines__table">
-          <thead>
-            <tr><th>Name</th><th>Varietal</th><th>Vintage</th><th>Price</th><th></th></tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-        <div id="qr-modal" class="qr-modal" hidden>
-          <div class="qr-modal__backdrop"></div>
-          <div class="qr-modal__content">
-            <h2 id="qr-modal-title">QR Code</h2>
-            <div id="qr-modal-canvas"></div>
-            <p id="qr-modal-url" class="qr-modal__url"></p>
-            <button id="qr-modal-close" class="btn btn--secondary">Close</button>
-          </div>
+      <header class="admin-wines__header">
+        <h1>Wines</h1>
+        <button id="add-wine-btn" class="btn btn--primary">Add Wine</button>
+      </header>
+      <table class="admin-wines__table">
+        <thead>
+          <tr><th>Name</th><th>Varietal</th><th>Vintage</th><th>Price</th><th></th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div id="qr-modal" class="qr-modal" hidden>
+        <div class="qr-modal__backdrop"></div>
+        <div class="qr-modal__content">
+          <h2 id="qr-modal-title">QR Code</h2>
+          <div id="qr-modal-canvas"></div>
+          <p id="qr-modal-url" class="qr-modal__url"></p>
+          <button id="qr-modal-close" class="btn btn--secondary">Close</button>
         </div>
       </div>
     `;
 
     document.getElementById('add-wine-btn').addEventListener('click', () => navigate('/admin/wines/new'));
-    document.getElementById('logout-btn').addEventListener('click', async () => {
-      await gateway.signOut();
-      state.resetAllState();
-      navigate('/admin');
-    });
     container.querySelectorAll('[data-edit]').forEach(btn => {
       btn.addEventListener('click', () => navigate(`/admin/wines/${btn.dataset.edit}/edit`));
     });
@@ -195,38 +222,11 @@ async function renderWineList(container) {
 }
 
 async function renderWineForm(container, wineId) {
-  if (!state.isLoggedIn()) {
-    navigate('/admin');
+  const winery = state.getCurrentWinery();
+  if (!winery) {
+    showToast('No winery found. Cannot manage wines.', 'error');
+    navigate('/admin/wines');
     return;
-  }
-
-  // Ensure winery is in state (handles direct navigation to /admin/wines/new)
-  if (!state.getCurrentWinery()) {
-    try {
-      const user = state.getCurrentUser();
-      let winery = null;
-      try {
-        const adminData = await gateway.getAdminWinery(user.id);
-        winery = adminData.wineries;
-      } catch (_) {
-        if (state.isSuperAdmin()) {
-          const allWineries = await gateway.getAllWineries();
-          if (allWineries.length > 0) winery = allWineries[0];
-        }
-      }
-      if (winery) {
-        state.setCurrentWinery(winery);
-      } else {
-        showToast('No winery found. Cannot manage wines.', 'error');
-        navigate('/admin/wines');
-        return;
-      }
-    } catch (err) {
-      logger.error('Failed to load winery for wine form', err);
-      showToast('Could not load winery.', 'error');
-      navigate('/admin/wines');
-      return;
-    }
   }
 
   let wine = null;
@@ -288,7 +288,6 @@ async function renderWineForm(container, wineId) {
 
   // Render QR code for existing wines
   if (isEdit) {
-    const winery = state.getCurrentWinery();
     const url = getBottleUrl(winery.slug, wine.id);
     document.getElementById('wine-qr-url').textContent = url;
     generateQR(document.getElementById('wine-qr-container'), url);
@@ -296,10 +295,8 @@ async function renderWineForm(container, wineId) {
 
   document.getElementById('wine-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const winery = state.getCurrentWinery();
     const submitBtn = e.target.querySelector('button[type="submit"]');
 
-    // Use getElementById — form.name conflicts with HTMLFormElement.name property
     const data = {
       name: document.getElementById('wine-name').value.trim(),
       varietal: document.getElementById('wine-varietal').value.trim() || null,

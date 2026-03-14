@@ -41,6 +41,116 @@
   vertical-align: middle;
 }
 
+.badge--owner {
+  display: inline-block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #2d7d46;
+  color: #fff;
+  padding: 0.2em 0.6em;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+.badge--staff {
+  display: inline-block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #4a6fa5;
+  color: #fff;
+  padding: 0.2em 0.6em;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+/* ── Admin Navigation ──────────────────────────────────────────────────── */
+
+.admin-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.admin-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: #f8f6fc;
+  border-bottom: 1px solid #e0d8ee;
+  flex-wrap: wrap;
+}
+
+.admin-nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-right: auto;
+}
+
+.admin-nav__title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #6b2fa0;
+}
+
+.admin-nav__winery {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.admin-nav__links {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.admin-nav__link {
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.85rem;
+  color: #444;
+  transition: background 0.15s;
+}
+
+.admin-nav__link:hover {
+  background: #ece6f5;
+}
+
+.admin-nav__link--active {
+  background: #6b2fa0;
+  color: #fff;
+}
+
+.admin-nav__link--active:hover {
+  background: #5a2788;
+}
+
+.admin-content {
+  flex: 1;
+  padding: 1.5rem;
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+  .admin-nav {
+    padding: 0.5rem 1rem;
+  }
+
+  .admin-nav__links {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .admin-content {
+    padding: 1rem;
+  }
+}
+
 /* ── Wine List ───────────────────────────────────────────────────────────── */
 
 .admin-wines__header {
