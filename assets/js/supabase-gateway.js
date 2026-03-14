@@ -88,6 +88,31 @@ export async function getAllWineries() {
   return data;
 }
 
+export async function createWinery(wineryData) {
+  const { data, error } = await getClient()
+    .from(TABLES.WINERIES)
+    .insert(wineryData)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateWinery(id, wineryData) {
+  const { data, error } = await getClient()
+    .from(TABLES.WINERIES)
+    .update(wineryData)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function toggleWineryActive(id, isActive) {
+  return updateWinery(id, { is_active: isActive });
+}
+
 // ── Wines ─────────────────────────────────────────────────────────────────────
 
 export async function getWineById(id) {

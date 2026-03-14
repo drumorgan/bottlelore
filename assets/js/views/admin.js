@@ -5,6 +5,7 @@ import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
 import { generateQR, getBottleUrl } from '../components/qr-generator.js';
 import { renderAdminNav } from '../components/admin-nav.js';
+import { renderWineryList, renderWineryForm } from './admin-wineries.js';
 
 export async function render(container, view, options = {}) {
   logger.breadcrumb(`render admin: ${view}`, 'view', options);
@@ -37,11 +38,14 @@ export async function render(container, view, options = {}) {
     case 'admin-wine-edit':
       await renderWineForm(content, options.wineId);
       break;
-    // Placeholder views for future phases
     case 'admin-wineries':
+      await renderWineryList(content);
+      break;
     case 'admin-winery-new':
+      await renderWineryForm(content, null);
+      break;
     case 'admin-winery-edit':
-      content.innerHTML = '<p>Winery management coming soon.</p>';
+      await renderWineryForm(content, options.wineryId);
       break;
     case 'admin-winery-profile':
       content.innerHTML = '<p>Winery profile editing coming soon.</p>';

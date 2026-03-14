@@ -275,6 +275,127 @@
   border: 1px solid currentColor;
 }
 
+/* ── Shared Admin Section Header ───────────────────────────────────────── */
+
+.admin-section__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.admin-section__header h1 {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.admin-search {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  width: 200px;
+}
+
+/* ── Shared Admin Table ────────────────────────────────────────────────── */
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.admin-table th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666;
+}
+
+.admin-table tbody tr:hover {
+  background: #f9f5ff;
+}
+
+.admin-table__actions {
+  white-space: nowrap;
+}
+
+.admin-table__actions .btn {
+  margin-right: 0.25rem;
+}
+
+.row--inactive {
+  opacity: 0.55;
+}
+
+.badge--active {
+  display: inline-block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #2d7d46;
+  color: #fff;
+  padding: 0.2em 0.6em;
+  border-radius: 4px;
+}
+
+.badge--inactive {
+  display: inline-block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #999;
+  color: #fff;
+  padding: 0.2em 0.6em;
+  border-radius: 4px;
+}
+
+/* ── Winery Form ───────────────────────────────────────────────────────── */
+
+.admin-winery-form {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.admin-winery-form h1 {
+  margin-bottom: 1rem;
+}
+
+.admin-winery-form button[type="submit"] {
+  margin-top: 1.5rem;
+  margin-right: 0.5rem;
+}
+
+.admin-winery-form__socials {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.admin-winery-form__socials legend {
+  font-weight: 600;
+  padding: 0 0.5rem;
+}
+
+.admin-winery-form__toggle {
+  margin-top: 1rem;
+}
+
+.admin-winery-form__toggle label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 600px) {
@@ -283,5 +404,16 @@
   .admin-wines__table th:nth-child(4),
   .admin-wines__table td:nth-child(4) {
     display: none;
+  }
+
+  .admin-table th:nth-child(2),
+  .admin-table td:nth-child(2),
+  .admin-table th:nth-child(3),
+  .admin-table td:nth-child(3) {
+    display: none;
+  }
+
+  .admin-search {
+    width: 100%;
   }
 }
