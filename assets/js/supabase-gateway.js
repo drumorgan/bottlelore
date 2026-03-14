@@ -161,6 +161,77 @@ export async function toggleWineActive(id, isActive) {
   return updateWine(id, { is_active: isActive });
 }
 
+// ── Flights ──────────────────────────────────────────────────────────────────
+
+export async function getFlightsByWinery(wineryId) {
+  const { data, error } = await getClient()
+    .from(TABLES.FLIGHTS)
+    .select('*, flight_wines(wine_id)')
+    .eq('winery_id', wineryId)
+    .order('sort_order');
+  if (error) throw error;
+  return data;
+}
+
+export async function getFlightById(id) {
+  const { data, error } = await getClient()
+    .from(TABLES.FLIGHTS)
+    .select('*, flight_wines(id, wine_id, sort_order, wines(id, name, varietal, is_active))')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function createFlight(flightData) {
+  const { data, error } = await getClient()
+    .from(TABLES.FLIGHTS)
+    .insert(flightData)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateFlight(id, flightData) {
+  const { data, error } = await getClient()
+    .from(TABLES.FLIGHTS)
+    .update(flightData)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function toggleFlightActive(id, isActive) {
+  return updateFlight(id, { is_active: isActive });
+}
+
+export async function setFlightWines(flightId, wineIds) {
+  // Remove existing wines for this flight
+  const { error: delErr } = await getClient()
+    .from(TABLES.FLIGHT_WINES)
+    .delete()
+    .eq('flight_id', flightId);
+  if (delErr) throw delErr;
+
+  if (wineIds.length === 0) return [];
+
+  // Insert new set with sort_order
+  const rows = wineIds.map((wineId, i) => ({
+    flight_id: flightId,
+    wine_id: wineId,
+    sort_order: i,
+  }));
+  const { data, error } = await getClient()
+    .from(TABLES.FLIGHT_WINES)
+    .insert(rows)
+    .select();
+  if (error) throw error;
+  return data;
+}
+
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
 export async function getAdminWinery(userId) {

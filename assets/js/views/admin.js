@@ -7,6 +7,7 @@ import { generateQR, getBottleUrl } from '../components/qr-generator.js';
 import { renderAdminNav } from '../components/admin-nav.js';
 import { renderWineryList, renderWineryForm } from './admin-wineries.js';
 import { renderWineryProfile } from './admin-winery-profile.js';
+import { renderFlightList, renderFlightForm } from './admin-flights.js';
 
 export async function render(container, view, options = {}) {
   logger.breadcrumb(`render admin: ${view}`, 'view', options);
@@ -52,9 +53,13 @@ export async function render(container, view, options = {}) {
       await renderWineryProfile(content);
       break;
     case 'admin-flights':
+      await renderFlightList(content);
+      break;
     case 'admin-flight-new':
+      await renderFlightForm(content, null);
+      break;
     case 'admin-flight-edit':
-      content.innerHTML = '<p>Flight management coming soon.</p>';
+      await renderFlightForm(content, options.flightId);
       break;
     case 'admin-staff':
     case 'admin-staff-invite':

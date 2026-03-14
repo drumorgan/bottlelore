@@ -403,6 +403,67 @@
   margin-bottom: 1.5rem;
 }
 
+/* ── Flight Form ───────────────────────────────────────────────────────── */
+
+.admin-flight-form {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.admin-flight-form h1 {
+  margin-bottom: 1rem;
+}
+
+.admin-flight-form button[type="submit"] {
+  margin-top: 1.5rem;
+  margin-right: 0.5rem;
+}
+
+/* ── Wine Picker ───────────────────────────────────────────────────────── */
+
+.wine-picker {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.wine-picker legend {
+  font-weight: 600;
+  padding: 0 0.5rem;
+}
+
+.wine-picker__list {
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.wine-picker__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.wine-picker__item:hover {
+  background: #f9f5ff;
+}
+
+.wine-picker__item--inactive {
+  opacity: 0.55;
+}
+
+.wine-picker__varietal {
+  color: #888;
+  font-size: 0.8rem;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 600px) {
