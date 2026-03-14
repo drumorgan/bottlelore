@@ -20,7 +20,8 @@ let authReady;
 const authReadyPromise = new Promise((resolve) => { authReady = resolve; });
 
 async function route() {
-  const { view, winerySlug, wineId } = parsePath();
+  const routeInfo = parsePath();
+  const { view } = routeInfo;
   const app = document.getElementById('app');
 
   // Wait for Supabase to restore the session before rendering admin views
@@ -32,7 +33,7 @@ async function route() {
     switch (view) {
       case 'bottle-page': {
         const { render } = await import('./views/bottle-page.js');
-        await render(app, winerySlug, wineId);
+        await render(app, routeInfo.winerySlug, routeInfo.wineId);
         break;
       }
       case 'admin-login':
@@ -49,7 +50,7 @@ async function route() {
       case 'admin-staff':
       case 'admin-staff-invite': {
         const { render } = await import('./views/admin.js');
-        await render(app, view, { wineId });
+        await render(app, view, routeInfo);
         break;
       }
       case 'home': {
