@@ -69,24 +69,13 @@ async function route() {
 
 // Auth state listener — also tracks user in Sentry and detects role
 let authFired = false;
-onAuthStateChange(async (user) => {
+onAuthStateChange((user) => {
   if (user) {
     setCurrentUser(user);
     logger.setUser(user);
 
-    // Detect role on session restore (login flow handles its own role detection)
-    try {
-      const isSA = await checkIsSuperAdmin();
-      setSuperAdmin(isSA);
-      if (isSA) {
-        setUserRole('super_admin');
-      } else {
-        const roleData = await getUserRole(user.id);
-        setUserRole(roleData ? roleData.role : 'staff');
-      }
-    } catch (err) {
-      logger.error('Role detection failed on auth restore', err);
-    }
+    // Detect role in background — don't block initial route render
+    detectRole(user.id);
   } else {
     resetAllState();
     logger.clearUser();
@@ -96,6 +85,21 @@ onAuthStateChange(async (user) => {
     authReady();
   }
 });
+
+async function detectRole(userId) {
+  try {
+    const isSA = await checkIsSuperAdmin();
+    setSuperAdmin(isSA);
+    if (isSA) {
+      setUserRole('super_admin');
+    } else {
+      const roleData = await getUserRole(userId);
+      setUserRole(roleData ? roleData.role : 'staff');
+    }
+  } catch (err) {
+    logger.error('Role detection failed on auth restore', err);
+  }
+}
 
 // Safety: if onAuthStateChange never fires (e.g. network down), resolve after timeout
 setTimeout(() => {
