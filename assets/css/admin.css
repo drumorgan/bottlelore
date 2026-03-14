@@ -396,6 +396,13 @@
   cursor: pointer;
 }
 
+.admin-winery-profile__name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #6b2fa0;
+  margin-bottom: 1.5rem;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 600px) {

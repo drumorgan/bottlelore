@@ -6,6 +6,7 @@ import * as state from '../state.js';
 import { generateQR, getBottleUrl } from '../components/qr-generator.js';
 import { renderAdminNav } from '../components/admin-nav.js';
 import { renderWineryList, renderWineryForm } from './admin-wineries.js';
+import { renderWineryProfile } from './admin-winery-profile.js';
 
 export async function render(container, view, options = {}) {
   logger.breadcrumb(`render admin: ${view}`, 'view', options);
@@ -48,7 +49,7 @@ export async function render(container, view, options = {}) {
       await renderWineryForm(content, options.wineryId);
       break;
     case 'admin-winery-profile':
-      content.innerHTML = '<p>Winery profile editing coming soon.</p>';
+      await renderWineryProfile(content);
       break;
     case 'admin-flights':
     case 'admin-flight-new':
