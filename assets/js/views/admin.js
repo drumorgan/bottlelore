@@ -75,11 +75,22 @@ export async function render(container, view, options = {}) {
 
 /**
  * Ensure winery is loaded in state (handles direct-navigation cases).
+ * For super admins, also loads the full winery list for the nav switcher.
  */
 async function ensureWineryLoaded() {
-  if (state.getCurrentWinery()) return;
-
   try {
+    // Super admins: load winery list for switcher if not already loaded
+    if (state.isSuperAdmin() && state.getAdminWineryList().length === 0) {
+      const allWineries = await gateway.getAllWineriesAdmin();
+      state.setAdminWineryList(allWineries);
+      if (!state.getCurrentWinery() && allWineries.length > 0) {
+        state.setCurrentWinery(allWineries[0]);
+      }
+      return;
+    }
+
+    if (state.getCurrentWinery()) return;
+
     const user = state.getCurrentUser();
     let winery = null;
     try {
