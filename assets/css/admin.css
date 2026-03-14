@@ -464,6 +464,71 @@
   font-size: 0.8rem;
 }
 
+/* ── Staff / Invite ────────────────────────────────────────────────────── */
+
+.staff-you {
+  font-size: 0.75rem;
+  color: #888;
+  font-style: italic;
+}
+
+.btn--danger {
+  background: #c0392b;
+  color: #fff;
+  border: none;
+}
+
+.btn--danger:hover {
+  background: #a93226;
+}
+
+.admin-invite-form {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.admin-invite-form h1 {
+  margin-bottom: 1rem;
+}
+
+.admin-invite-form select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.admin-invite-form button[type="submit"] {
+  margin-top: 1.5rem;
+  margin-right: 0.5rem;
+}
+
+.admin-invite-form__help {
+  margin-top: 1rem;
+}
+
+.admin-invite-form__help summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.role-descriptions {
+  margin: 0.5rem 0 0 1rem;
+  font-size: 0.85rem;
+}
+
+.role-descriptions dt {
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.role-descriptions dd {
+  margin-left: 0;
+  color: #555;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 600px) {

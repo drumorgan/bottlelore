@@ -268,3 +268,40 @@ export async function getAllWineriesAdmin() {
   if (error) throw error;
   return data;
 }
+
+// ── Staff ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Get staff list for a winery via the get_winery_staff DB function.
+ * Returns [{ admin_id, user_id, email, role, created_at }].
+ */
+export async function getWineryStaff(wineryId) {
+  const { data, error } = await getClient()
+    .rpc('get_winery_staff', { target_winery_id: wineryId });
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Invite a user to a winery via the invite-user Edge Function.
+ */
+export async function inviteUser(email, wineryId, role) {
+  const { data, error } = await getClient()
+    .functions.invoke('invite-user', {
+      body: { email, winery_id: wineryId, role },
+    });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+
+/**
+ * Remove a winery admin by their winery_admins row ID.
+ */
+export async function removeWineryAdmin(adminId) {
+  const { error } = await getClient()
+    .from(TABLES.WINERY_ADMINS)
+    .delete()
+    .eq('id', adminId);
+  if (error) throw error;
+}
