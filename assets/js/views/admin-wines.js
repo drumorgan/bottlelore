@@ -3,7 +3,7 @@ import { escapeHtml, showToast } from '../utils.js';
 import { navigate } from '../router.js';
 import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
-import { generateQR, getBottleUrl } from '../components/qr-generator.js';
+import { generateQR, getBottleUrl, downloadQR, printQR } from '../components/qr-generator.js';
 import { createTagInput } from '../components/tag-input.js';
 import { createImageUpload } from '../components/image-upload.js';
 
@@ -59,6 +59,10 @@ export async function renderWineList(container) {
           <h2 id="qr-modal-title">QR Code</h2>
           <div id="qr-modal-canvas"></div>
           <p id="qr-modal-url" class="qr-modal__url"></p>
+          <div class="qr-modal__actions">
+            <button id="qr-modal-download" class="btn btn--small btn--primary">Download PNG</button>
+            <button id="qr-modal-print" class="btn btn--small btn--outline">Print</button>
+          </div>
           <button id="qr-modal-close" class="btn btn--secondary">Close</button>
         </div>
       </div>
@@ -92,20 +96,30 @@ export async function renderWineList(container) {
 
     // QR code modal
     const qrModal = document.getElementById('qr-modal');
+    let qrModalWineName = '';
     container.querySelectorAll('[data-qr]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const wineId = btn.dataset.qr;
         const slug = btn.dataset.slug;
         const url = getBottleUrl(slug, wineId);
         const w = wines.find(x => x.id === wineId);
+        qrModalWineName = w ? w.name : 'QR Code';
 
-        document.getElementById('qr-modal-title').textContent = w ? w.name : 'QR Code';
+        document.getElementById('qr-modal-title').textContent = qrModalWineName;
         document.getElementById('qr-modal-url').textContent = url;
         document.getElementById('qr-modal-canvas').innerHTML = '';
 
         qrModal.hidden = false;
         await generateQR(document.getElementById('qr-modal-canvas'), url);
       });
+    });
+    document.getElementById('qr-modal-download').addEventListener('click', () => {
+      const canvas = document.querySelector('#qr-modal-canvas canvas');
+      if (canvas) downloadQR(canvas, qrModalWineName);
+    });
+    document.getElementById('qr-modal-print').addEventListener('click', () => {
+      const canvas = document.querySelector('#qr-modal-canvas canvas');
+      if (canvas) printQR(canvas, qrModalWineName);
     });
     document.getElementById('qr-modal-close').addEventListener('click', () => { qrModal.hidden = true; });
     document.querySelector('.qr-modal__backdrop').addEventListener('click', () => { qrModal.hidden = true; });
@@ -177,6 +191,10 @@ export async function renderWineForm(container, wineId) {
         <h2>QR Code</h2>
         <div id="wine-qr-container"></div>
         <p id="wine-qr-url" class="qr-modal__url"></p>
+        <div class="qr-modal__actions">
+          <button type="button" id="wine-qr-download" class="btn btn--small btn--primary">Download PNG</button>
+          <button type="button" id="wine-qr-print" class="btn btn--small btn--outline">Print</button>
+        </div>
       </section>` : ''}
     </div>
   `;
@@ -202,6 +220,15 @@ export async function renderWineForm(container, wineId) {
     const url = getBottleUrl(winery.slug, wine.id);
     document.getElementById('wine-qr-url').textContent = url;
     generateQR(document.getElementById('wine-qr-container'), url);
+
+    document.getElementById('wine-qr-download').addEventListener('click', () => {
+      const canvas = document.querySelector('#wine-qr-container canvas');
+      if (canvas) downloadQR(canvas, wine.name);
+    });
+    document.getElementById('wine-qr-print').addEventListener('click', () => {
+      const canvas = document.querySelector('#wine-qr-container canvas');
+      if (canvas) printQR(canvas, wine.name);
+    });
   }
 
   document.getElementById('wine-form').addEventListener('submit', async (e) => {

@@ -22,6 +22,8 @@ vi.mock('../assets/js/logger.js', () => ({
 vi.mock('../assets/js/components/qr-generator.js', () => ({
   generateQR: vi.fn(),
   getBottleUrl: vi.fn((slug, id) => `http://localhost/${slug}/${id}`),
+  downloadQR: vi.fn(),
+  printQR: vi.fn(),
 }));
 
 // Let the real tag-input run — it's a pure DOM component, no external deps to mock
@@ -123,6 +125,18 @@ describe('admin-wines', () => {
       const modal = container.querySelector('#qr-modal');
       expect(modal).not.toBeNull();
       expect(modal.hidden).toBe(true);
+    });
+
+    it('QR modal has download and print buttons', async () => {
+      state.setCurrentWinery(MOCK_WINERY);
+      gateway.getWinesByWinery.mockResolvedValue(MOCK_WINES);
+
+      await renderWineList(container);
+
+      expect(container.querySelector('#qr-modal-download')).not.toBeNull();
+      expect(container.querySelector('#qr-modal-print')).not.toBeNull();
+      expect(container.querySelector('#qr-modal-download').textContent).toContain('Download');
+      expect(container.querySelector('#qr-modal-print').textContent).toContain('Print');
     });
 
     it('shows toast on fetch error', async () => {

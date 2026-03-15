@@ -12,7 +12,7 @@ vi.mock('../assets/js/logger.js', () => ({
   error: vi.fn(),
 }));
 
-import { generateQR, getBottleUrl } from '../assets/js/components/qr-generator.js';
+import { generateQR, getBottleUrl, downloadQR, printQR } from '../assets/js/components/qr-generator.js';
 import QRCode from 'qrcode';
 
 describe('qr-generator', () => {
@@ -69,6 +69,81 @@ describe('qr-generator', () => {
 
       // The error is caught and logged; container should still have old content
       // since canvas was never appended
+    });
+  });
+
+  // ── downloadQR ──────────────────────────────────────────────────────
+
+  describe('downloadQR', () => {
+    it('creates a link with PNG data URL and clicks it', () => {
+      const canvas = document.createElement('canvas');
+      canvas.toDataURL = vi.fn(() => 'data:image/png;base64,fake');
+
+      const clickSpy = vi.fn();
+      vi.spyOn(document, 'createElement').mockImplementation((tag) => {
+        if (tag === 'a') {
+          const link = { click: clickSpy, download: '', href: '' };
+          return link;
+        }
+        return document.createElementNS('http://www.w3.org/1999/xhtml', tag);
+      });
+
+      downloadQR(canvas, 'My Wine');
+
+      expect(clickSpy).toHaveBeenCalled();
+      document.createElement.mockRestore();
+    });
+  });
+
+  // ── printQR ─────────────────────────────────────────────────────────
+
+  describe('printQR', () => {
+    it('opens a new window with QR image and wine name', () => {
+      const canvas = document.createElement('canvas');
+      canvas.toDataURL = vi.fn(() => 'data:image/png;base64,fake');
+
+      const mockWin = { document: { write: vi.fn(), close: vi.fn() } };
+      vi.spyOn(window, 'open').mockReturnValue(mockWin);
+
+      printQR(canvas, 'Estate Cabernet');
+
+      expect(window.open).toHaveBeenCalledWith('', '_blank');
+      expect(mockWin.document.write).toHaveBeenCalled();
+      const html = mockWin.document.write.mock.calls[0][0];
+      expect(html).toContain('Estate Cabernet');
+      expect(html).toContain('data:image/png;base64,fake');
+      expect(mockWin.document.close).toHaveBeenCalled();
+
+      window.open.mockRestore();
+    });
+
+    it('shows toast when pop-up is blocked', () => {
+      const canvas = document.createElement('canvas');
+      vi.spyOn(window, 'open').mockReturnValue(null);
+
+      printQR(canvas, 'Blocked Wine');
+
+      const toast = document.getElementById('bl-toast');
+      expect(toast).not.toBeNull();
+      expect(toast.textContent).toContain('pop-up');
+
+      window.open.mockRestore();
+    });
+
+    it('escapes HTML in wine name', () => {
+      const canvas = document.createElement('canvas');
+      canvas.toDataURL = vi.fn(() => 'data:image/png;base64,fake');
+
+      const mockWin = { document: { write: vi.fn(), close: vi.fn() } };
+      vi.spyOn(window, 'open').mockReturnValue(mockWin);
+
+      printQR(canvas, '<script>alert(1)</script>');
+
+      const html = mockWin.document.write.mock.calls[0][0];
+      expect(html).not.toContain('<script>');
+      expect(html).toContain('&lt;script');
+
+      window.open.mockRestore();
     });
   });
 });
