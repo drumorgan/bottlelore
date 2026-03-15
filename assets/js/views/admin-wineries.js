@@ -260,9 +260,10 @@ export async function renderWineryForm(container, wineryId) {
     </div>
   `;
 
+  const tempId = crypto.randomUUID();
   const logoUpload = createImageUpload(document.getElementById('winery-logo-container'), {
     bucket: 'winery-logos',
-    pathPrefix: isEdit ? winery.id : 'new',
+    pathPrefix: isEdit ? winery.id : tempId,
     currentUrl: winery?.logo_url || null,
     label: 'Winery Logo',
     id: 'winery-logo',
