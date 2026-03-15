@@ -3,6 +3,7 @@ import { escapeHtml, showToast } from '../utils.js';
 import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
 import { createImageUpload } from '../components/image-upload.js';
+import { generateQR, getWineryUrl, downloadQR, printQR } from '../components/qr-generator.js';
 
 export async function renderWineryProfile(container) {
   const winery = state.getCurrentWinery();
@@ -56,6 +57,15 @@ export async function renderWineryProfile(container) {
 
         <button type="submit" class="btn btn--primary">Save Changes</button>
       </form>
+      <section class="admin-winery-form__qr">
+        <h2>QR Code</h2>
+        <div id="profile-qr-container"></div>
+        <p id="profile-qr-url" class="qr-modal__url"></p>
+        <div class="qr-modal__actions">
+          <button type="button" id="profile-qr-download" class="btn btn--small btn--primary">Download PNG</button>
+          <button type="button" id="profile-qr-print" class="btn btn--small btn--outline">Print</button>
+        </div>
+      </section>
     </div>
   `;
 
@@ -65,6 +75,20 @@ export async function renderWineryProfile(container) {
     currentUrl: winery.logo_url || null,
     label: 'Winery Logo',
     id: 'profile-logo',
+  });
+
+  // Render QR code
+  const qrUrl = getWineryUrl(winery.slug);
+  document.getElementById('profile-qr-url').textContent = qrUrl;
+  generateQR(document.getElementById('profile-qr-container'), qrUrl);
+
+  document.getElementById('profile-qr-download').addEventListener('click', () => {
+    const canvas = document.querySelector('#profile-qr-container canvas');
+    if (canvas) downloadQR(canvas, winery.name);
+  });
+  document.getElementById('profile-qr-print').addEventListener('click', () => {
+    const canvas = document.querySelector('#profile-qr-container canvas');
+    if (canvas) printQR(canvas, winery.name);
   });
 
   document.getElementById('profile-form').addEventListener('submit', async (e) => {
