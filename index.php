@@ -27,6 +27,7 @@ if (file_exists($manifestPath)) {
     <script
       src="https://js.sentry-cdn.com/8b97e74bad26da02c834652de708d5ef.min.js"
       crossorigin="anonymous"
+      defer
     ></script>
     <?php endif; ?>
 

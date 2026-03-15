@@ -24,8 +24,9 @@ async function route() {
   const { view } = routeInfo;
   const app = document.getElementById('app');
 
-  // Wait for Supabase to restore the session before rendering admin views
-  if (view.startsWith('admin') && !isLoggedIn()) {
+  // Wait for Supabase to restore the session before rendering protected admin views
+  // (skip for admin-login — it doesn't need auth and should render instantly)
+  if (view.startsWith('admin') && view !== 'admin-login' && !isLoggedIn()) {
     await authReadyPromise;
   }
 
