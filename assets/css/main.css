@@ -180,6 +180,20 @@ a:hover {
   color: #d32f2f;
 }
 
+.error-state p {
+  margin: 0.75rem 0 1.5rem;
+  color: #666;
+  line-height: 1.6;
+}
+
+.error-state--offline h1 {
+  color: var(--text-primary, #333);
+}
+
+.error-state--offline #retry-btn {
+  margin-top: 0.5rem;
+}
+
 .not-found {
   text-align: center;
   padding: 4rem 1rem;
