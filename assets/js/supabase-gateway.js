@@ -275,27 +275,25 @@ export async function setFlightWines(flightId, wineIds) {
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
-export async function getAdminWinery(userId) {
+export async function getAdminWineries(userId) {
   const { data, error } = await getClient()
     .from(TABLES.WINERY_ADMINS)
     .select('*, wineries(*)')
-    .eq('user_id', userId)
-    .single();
+    .eq('user_id', userId);
   if (error) throw error;
-  return data;
+  return data || [];
 }
 
 /**
- * Returns { role, winery_id } for the given user, or null if no row exists.
+ * Returns array of { role, winery_id } for the given user.
  */
-export async function getUserRole(userId) {
+export async function getUserRoles(userId) {
   const { data, error } = await getClient()
     .from(TABLES.WINERY_ADMINS)
     .select('role, winery_id')
-    .eq('user_id', userId)
-    .maybeSingle();
+    .eq('user_id', userId);
   if (error) throw error;
-  return data;
+  return data || [];
 }
 
 /**
@@ -334,6 +332,19 @@ export async function inviteUser(email, wineryId, role) {
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
   return data;
+}
+
+/**
+ * Update a winery admin's role (e.g. promote staff → owner).
+ * @param {string} adminId — winery_admins row ID
+ * @param {string} newRole — 'owner' or 'staff'
+ */
+export async function updateWineryAdminRole(adminId, newRole) {
+  const { error } = await getClient()
+    .from(TABLES.WINERY_ADMINS)
+    .update({ role: newRole })
+    .eq('id', adminId);
+  if (error) throw error;
 }
 
 /**

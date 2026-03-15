@@ -75,13 +75,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Owners can only invite staff, not other owners
-    if (!isSA && role === "owner") {
-      return new Response(
-        JSON.stringify({ error: "Only super admins can assign the owner role" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Owners and super admins can assign any role (owner or staff)
 
     // Use service role client for admin operations
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
