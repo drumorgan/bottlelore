@@ -1,8 +1,8 @@
 import * as logger from '../logger.js';
 import { escapeHtml, showToast } from '../utils.js';
-import { navigate } from '../router.js';
 import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
+import { createImageUpload } from '../components/image-upload.js';
 
 export async function renderWineryProfile(container) {
   const winery = state.getCurrentWinery();
@@ -17,6 +17,9 @@ export async function renderWineryProfile(container) {
       <h1>Winery Profile</h1>
       <p class="admin-winery-profile__name">${escapeHtml(winery.name)}</p>
       <form id="profile-form">
+        <label>Logo</label>
+        <div id="profile-logo-container"></div>
+
         <label for="profile-location">Location</label>
         <input type="text" id="profile-location" name="location" value="${escapeHtml(winery.location || '')}" />
 
@@ -49,6 +52,14 @@ export async function renderWineryProfile(container) {
     </div>
   `;
 
+  const logoUpload = createImageUpload(document.getElementById('profile-logo-container'), {
+    bucket: 'winery-logos',
+    pathPrefix: winery.id,
+    currentUrl: winery.logo_url || null,
+    label: 'Winery Logo',
+    id: 'profile-logo',
+  });
+
   document.getElementById('profile-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -62,6 +73,7 @@ export async function renderWineryProfile(container) {
       social_facebook: document.getElementById('profile-facebook').value.trim() || null,
       social_instagram: document.getElementById('profile-instagram').value.trim() || null,
       social_twitter: document.getElementById('profile-twitter').value.trim() || null,
+      logo_url: logoUpload.getUrl(),
     };
 
     submitBtn.disabled = true;

@@ -305,3 +305,30 @@ export async function removeWineryAdmin(adminId) {
     .eq('id', adminId);
   if (error) throw error;
 }
+
+// ── Storage ──────────────────────────────────────────────────────────────────
+
+/**
+ * Upload an image to Supabase Storage.
+ * @param {string} bucket — storage bucket name (e.g. 'wine-images', 'winery-logos')
+ * @param {string} path — file path within the bucket (e.g. 'w1/photo.jpg')
+ * @param {File} file — the File object to upload
+ * @returns {string} — the public URL of the uploaded file
+ */
+export async function uploadImage(bucket, path, file) {
+  const { error } = await getClient()
+    .storage.from(bucket)
+    .upload(path, file, { upsert: true });
+  if (error) throw error;
+  return getPublicUrl(bucket, path);
+}
+
+/**
+ * Get the public URL for a file in Supabase Storage.
+ */
+export function getPublicUrl(bucket, path) {
+  const { data } = getClient()
+    .storage.from(bucket)
+    .getPublicUrl(path);
+  return data.publicUrl;
+}

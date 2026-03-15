@@ -539,6 +539,54 @@
   color: #555;
 }
 
+/* ── Image Upload ───────────────────────────────────────────────────────── */
+
+.image-upload {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.image-upload__preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+}
+
+.image-upload__placeholder {
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px dashed #ccc;
+  background: #fff;
+  color: #999;
+  font-size: 0.8rem;
+}
+
+.image-upload__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.image-upload__input {
+  display: none;
+}
+
+.image-upload__btn {
+  cursor: pointer;
+}
+
 /* ── Tag Input ──────────────────────────────────────────────────────────── */
 
 .tag-input {
