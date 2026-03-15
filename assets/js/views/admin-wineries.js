@@ -96,12 +96,12 @@ export async function renderWineryList(container) {
         });
       });
 
-      // Manage buttons — set winery context and go to wines
+      // Manage buttons — set winery context and go to winery settings
       tbody.querySelectorAll('[data-manage]').forEach(btn => {
         btn.addEventListener('click', () => {
           const winery = wineries.find(w => w.id === btn.dataset.manage);
           if (winery) state.setCurrentWinery(winery);
-          navigate('/admin/wines');
+          navigate('/admin/winery/profile');
         });
       });
 
