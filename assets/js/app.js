@@ -36,6 +36,16 @@ async function route() {
         await render(app, routeInfo.winerySlug, routeInfo.wineId);
         break;
       }
+      case 'flight-page': {
+        const { render } = await import('./views/flight-page.js');
+        await render(app, routeInfo.winerySlug, routeInfo.flightId);
+        break;
+      }
+      case 'winery-page': {
+        const { render } = await import('./views/winery-page.js');
+        await render(app, routeInfo.winerySlug);
+        break;
+      }
       case 'admin-login':
       case 'admin-wines':
       case 'admin-wine-new':

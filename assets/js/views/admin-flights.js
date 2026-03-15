@@ -3,6 +3,7 @@ import { escapeHtml, showToast } from '../utils.js';
 import { navigate } from '../router.js';
 import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
+import { generateQR, getFlightUrl, downloadQR, printQR } from '../components/qr-generator.js';
 
 export async function renderFlightList(container) {
   const winery = state.getCurrentWinery();
@@ -36,6 +37,7 @@ export async function renderFlightList(container) {
               <button class="btn btn--small btn--outline" data-toggle="${escapeHtml(f.id)}" data-active="${f.is_active}">
                 ${f.is_active ? 'Deactivate' : 'Activate'}
               </button>
+              <button class="btn btn--small btn--outline" data-qr="${escapeHtml(f.id)}" data-slug="${escapeHtml(winery.slug)}">QR</button>
             </td>
           </tr>
         `;
@@ -52,6 +54,19 @@ export async function renderFlightList(container) {
         </thead>
         <tbody>${rows}</tbody>
       </table>
+      <div id="qr-modal" class="qr-modal" hidden>
+        <div class="qr-modal__backdrop"></div>
+        <div class="qr-modal__content">
+          <h2 id="qr-modal-title">QR Code</h2>
+          <div id="qr-modal-canvas"></div>
+          <p id="qr-modal-url" class="qr-modal__url"></p>
+          <div class="qr-modal__actions">
+            <button id="qr-modal-download" class="btn btn--small btn--primary">Download PNG</button>
+            <button id="qr-modal-print" class="btn btn--small btn--outline">Print</button>
+          </div>
+          <button id="qr-modal-close" class="btn btn--secondary">Close</button>
+        </div>
+      </div>
     `;
 
     document.getElementById('add-flight-btn').addEventListener('click', () => navigate('/admin/flights/new'));
@@ -79,6 +94,36 @@ export async function renderFlightList(container) {
         }
       });
     });
+
+    // QR code modal
+    const qrModal = document.getElementById('qr-modal');
+    let qrModalFlightName = '';
+    container.querySelectorAll('[data-qr]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const flightId = btn.dataset.qr;
+        const slug = btn.dataset.slug;
+        const url = getFlightUrl(slug, flightId);
+        const f = flights.find(x => x.id === flightId);
+        qrModalFlightName = f ? f.name : 'QR Code';
+
+        document.getElementById('qr-modal-title').textContent = qrModalFlightName;
+        document.getElementById('qr-modal-url').textContent = url;
+        document.getElementById('qr-modal-canvas').innerHTML = '';
+
+        qrModal.hidden = false;
+        await generateQR(document.getElementById('qr-modal-canvas'), url);
+      });
+    });
+    document.getElementById('qr-modal-download').addEventListener('click', () => {
+      const canvas = document.querySelector('#qr-modal-canvas canvas');
+      if (canvas) downloadQR(canvas, qrModalFlightName);
+    });
+    document.getElementById('qr-modal-print').addEventListener('click', () => {
+      const canvas = document.querySelector('#qr-modal-canvas canvas');
+      if (canvas) printQR(canvas, qrModalFlightName);
+    });
+    document.getElementById('qr-modal-close').addEventListener('click', () => { qrModal.hidden = true; });
+    document.querySelector('.qr-modal__backdrop').addEventListener('click', () => { qrModal.hidden = true; });
   } catch (err) {
     logger.error('Failed to load flights', err);
     showToast('Could not load flight list.', 'error');
@@ -172,10 +217,36 @@ export async function renderFlightForm(container, flightId) {
         <button type="submit" class="btn btn--primary">${isEdit ? 'Save Changes' : 'Create Flight'}</button>
         <button type="button" id="cancel-btn" class="btn btn--secondary">Cancel</button>
       </form>
+      ${isEdit ? `
+      <section class="admin-flight-form__qr">
+        <h2>QR Code</h2>
+        <div id="flight-qr-container"></div>
+        <p id="flight-qr-url" class="qr-modal__url"></p>
+        <div class="qr-modal__actions">
+          <button type="button" id="flight-qr-download" class="btn btn--small btn--primary">Download PNG</button>
+          <button type="button" id="flight-qr-print" class="btn btn--small btn--outline">Print</button>
+        </div>
+      </section>` : ''}
     </div>
   `;
 
   document.getElementById('cancel-btn').addEventListener('click', () => navigate('/admin/flights'));
+
+  // Render QR code for existing flights
+  if (isEdit) {
+    const url = getFlightUrl(winery.slug, flight.id);
+    document.getElementById('flight-qr-url').textContent = url;
+    generateQR(document.getElementById('flight-qr-container'), url);
+
+    document.getElementById('flight-qr-download').addEventListener('click', () => {
+      const canvas = document.querySelector('#flight-qr-container canvas');
+      if (canvas) downloadQR(canvas, flight.name);
+    });
+    document.getElementById('flight-qr-print').addEventListener('click', () => {
+      const canvas = document.querySelector('#flight-qr-container canvas');
+      if (canvas) printQR(canvas, flight.name);
+    });
+  }
 
   document.getElementById('flight-form').addEventListener('submit', async (e) => {
     e.preventDefault();
