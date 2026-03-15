@@ -35,6 +35,13 @@ export async function renderWineryProfile(container) {
         <label for="profile-website">Website URL</label>
         <input type="url" id="profile-website" name="website_url" value="${escapeHtml(winery.website_url || '')}" />
 
+        <label for="profile-theme">Guest Page Theme</label>
+        <select id="profile-theme" name="theme_preference">
+          <option value="auto" ${(winery.theme_preference || 'auto') === 'auto' ? 'selected' : ''}>Auto (follows guest's device)</option>
+          <option value="day" ${winery.theme_preference === 'day' ? 'selected' : ''}>Day (always light)</option>
+          <option value="night" ${winery.theme_preference === 'night' ? 'selected' : ''}>Night (always dark)</option>
+        </select>
+
         <fieldset class="admin-winery-form__socials">
           <legend>Social Media</legend>
           <label for="profile-facebook">Facebook</label>
@@ -74,6 +81,7 @@ export async function renderWineryProfile(container) {
       social_instagram: document.getElementById('profile-instagram').value.trim() || null,
       social_twitter: document.getElementById('profile-twitter').value.trim() || null,
       logo_url: logoUpload.getUrl(),
+      theme_preference: document.getElementById('profile-theme').value,
     };
 
     submitBtn.disabled = true;

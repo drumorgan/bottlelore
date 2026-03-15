@@ -2,6 +2,7 @@ import * as logger from '../logger.js';
 import { escapeHtml, showToast } from '../utils.js';
 import { getPublicFlightById } from '../supabase-gateway.js';
 import { navigate } from '../router.js';
+import { applyTheme } from '../theme.js';
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1500;
@@ -65,6 +66,8 @@ export async function render(container, winerySlug, flightId) {
     container.innerHTML = '<div class="error-state"><h1>Flight not found</h1><p>This QR code may be invalid or the flight is no longer available.</p></div>';
     return;
   }
+
+  applyTheme(winery.theme_preference);
 
   // Sort wines by sort_order, filter to active only
   const sortedWines = (flight.flight_wines || [])

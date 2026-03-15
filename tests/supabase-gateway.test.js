@@ -213,7 +213,7 @@ describe('supabase-gateway', () => {
 
       const result = await gateway.getWineById('wine-1');
       expect(mockFrom).toHaveBeenCalledWith('wines');
-      expect(chain.select).toHaveBeenCalledWith('*, wineries(name, slug)');
+      expect(chain.select).toHaveBeenCalledWith('*, wineries(name, slug, theme_preference)');
       expect(chain.eq).toHaveBeenCalledWith('id', 'wine-1');
       expect(chain.eq).toHaveBeenCalledWith('is_active', true);
       expect(result).toEqual(wine);
@@ -345,18 +345,22 @@ describe('supabase-gateway', () => {
     });
   });
 
-  // ── getUserRole ───────────────────────────────────────────────────────
+  // ── getUserRoles ──────────────────────────────────────────────────────
 
-  describe('getUserRole', () => {
-    it('returns role and winery_id', async () => {
-      const roleData = { role: 'owner', winery_id: 'w1' };
-      const chain = mockQuery({ data: roleData, error: null });
+  describe('getUserRoles', () => {
+    it('returns array of role assignments', async () => {
+      const roles = [{ role: 'owner', winery_id: 'w1' }];
+      const chain = mockQuery({ data: roles, error: null });
+      // getUserRoles ends with .eq() (no .single()), so make eq thenable
+      chain.eq.mockImplementation(() => {
+        return { ...chain, then: (resolve) => resolve({ data: roles, error: null }) };
+      });
       mockFrom.mockReturnValue(chain);
 
-      const result = await gateway.getUserRole('u1');
+      const result = await gateway.getUserRoles('u1');
       expect(chain.select).toHaveBeenCalledWith('role, winery_id');
       expect(chain.eq).toHaveBeenCalledWith('user_id', 'u1');
-      expect(result).toEqual(roleData);
+      expect(result).toEqual(roles);
     });
   });
 });
