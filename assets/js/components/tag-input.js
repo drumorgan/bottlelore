@@ -48,7 +48,18 @@ export function createTagInput(container, { initialTags = [], placeholder = 'Typ
   const input = container.querySelector('.tag-input__field');
 
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ',') {
+    if (e.key === 'Enter') {
+      if (input.value.trim()) {
+        e.preventDefault();
+        if (addTag(input.value)) {
+          input.value = '';
+        }
+      }
+      // When empty, let Enter propagate so the parent form can submit
+      return;
+    }
+
+    if (e.key === ',') {
       e.preventDefault();
       if (addTag(input.value)) {
         input.value = '';
