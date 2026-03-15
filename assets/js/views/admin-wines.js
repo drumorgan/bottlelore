@@ -4,6 +4,7 @@ import { navigate } from '../router.js';
 import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
 import { generateQR, getBottleUrl } from '../components/qr-generator.js';
+import { createTagInput } from '../components/tag-input.js';
 
 export async function renderWineList(container) {
   container.innerHTML = '<div class="loading">Loading wines...</div>';
@@ -161,8 +162,8 @@ export async function renderWineForm(container, wineId) {
         <label for="wine-tasting-notes">Tasting Notes</label>
         <textarea id="wine-tasting-notes" name="tasting_notes">${escapeHtml(wine?.tasting_notes || '')}</textarea>
 
-        <label for="wine-pairings">Food Pairings (comma-separated)</label>
-        <input type="text" id="wine-pairings" name="food_pairings" value="${escapeHtml((wine?.food_pairings || []).join(', '))}" />
+        <label>Food Pairings</label>
+        <div id="wine-pairings-container"></div>
 
         <button type="submit" class="btn btn--primary">${isEdit ? 'Save Changes' : 'Create Wine'}</button>
         <button type="button" id="cancel-btn" class="btn btn--secondary">Cancel</button>
@@ -175,6 +176,12 @@ export async function renderWineForm(container, wineId) {
       </section>` : ''}
     </div>
   `;
+
+  const pairingsInput = createTagInput(document.getElementById('wine-pairings-container'), {
+    initialTags: wine?.food_pairings || [],
+    placeholder: 'e.g. Grilled steak — press Enter',
+    id: 'wine-pairings',
+  });
 
   document.getElementById('cancel-btn').addEventListener('click', () => navigate('/admin/wines'));
 
@@ -197,9 +204,7 @@ export async function renderWineForm(container, wineId) {
       price: document.getElementById('wine-price').value.trim() || null,
       description: document.getElementById('wine-description').value.trim() || null,
       tasting_notes: document.getElementById('wine-tasting-notes').value.trim() || null,
-      food_pairings: document.getElementById('wine-pairings').value
-        ? document.getElementById('wine-pairings').value.split(',').map(s => s.trim()).filter(Boolean)
-        : [],
+      food_pairings: pairingsInput.getTags(),
     };
 
     submitBtn.disabled = true;

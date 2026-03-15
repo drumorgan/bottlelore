@@ -23,6 +23,8 @@ vi.mock('../assets/js/components/qr-generator.js', () => ({
   getBottleUrl: vi.fn((slug, id) => `http://localhost/${slug}/${id}`),
 }));
 
+// Let the real tag-input run — it's a pure DOM component, no external deps to mock
+
 import { renderWineList, renderWineForm } from '../assets/js/views/admin-wines.js';
 import * as gateway from '../assets/js/supabase-gateway.js';
 import * as state from '../assets/js/state.js';
@@ -31,8 +33,8 @@ import { navigate } from '../assets/js/router.js';
 const MOCK_WINERY = { id: 'w1', name: 'Test Winery', slug: 'test-winery' };
 
 const MOCK_WINES = [
-  { id: 'wine-1', name: 'Merlot', varietal: 'Merlot', vintage_year: 2021, price: '$30', is_active: true },
-  { id: 'wine-2', name: 'Chardonnay', varietal: 'Chardonnay', vintage_year: 2022, price: '$25', is_active: false },
+  { id: 'wine-1', name: 'Merlot', varietal: 'Merlot', vintage_year: 2021, price: '$30', is_active: true, food_pairings: ['Steak', 'Pasta'] },
+  { id: 'wine-2', name: 'Chardonnay', varietal: 'Chardonnay', vintage_year: 2022, price: '$25', is_active: false, food_pairings: [] },
 ];
 
 describe('admin-wines', () => {
@@ -183,7 +185,13 @@ describe('admin-wines', () => {
       container.querySelector('#wine-vintage').value = '2023';
       container.querySelector('#wine-region').value = 'Sonoma';
       container.querySelector('#wine-price').value = '$50';
-      container.querySelector('#wine-pairings').value = 'Steak, Lamb';
+
+      // Add food pairings via the tag input
+      const tagField = container.querySelector('.tag-input__field');
+      tagField.value = 'Steak';
+      tagField.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      tagField.value = 'Lamb';
+      tagField.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
 
       container.querySelector('#wine-form').dispatchEvent(new Event('submit'));
 
@@ -248,6 +256,18 @@ describe('admin-wines', () => {
 
       expect(gateway.getWineById).toHaveBeenCalledWith('wine-1');
       expect(container.innerHTML).toContain('Edit Merlot');
+    });
+
+    it('loads existing food pairings as tags when editing', async () => {
+      state.setCurrentWinery(MOCK_WINERY);
+      state.setWines(MOCK_WINES);
+
+      await renderWineForm(container, 'wine-1');
+
+      const tags = container.querySelectorAll('.tag-input__tag');
+      expect(tags.length).toBe(2);
+      expect(tags[0].textContent).toContain('Steak');
+      expect(tags[1].textContent).toContain('Pasta');
     });
 
     it('shows QR section only for existing wines', async () => {
