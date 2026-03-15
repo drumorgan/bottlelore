@@ -7,6 +7,7 @@ vi.mock('../assets/js/supabase-gateway.js', () => ({
   createWine: vi.fn(),
   updateWine: vi.fn(),
   toggleWineActive: vi.fn(),
+  uploadImage: vi.fn(),
 }));
 
 vi.mock('../assets/js/router.js', () => ({
@@ -205,6 +206,7 @@ describe('admin-wines', () => {
           description: null,
           tasting_notes: null,
           food_pairings: ['Steak', 'Lamb'],
+          image_url: null,
           winery_id: 'w1',
         });
         expect(navigate).toHaveBeenCalledWith('/admin/wines');

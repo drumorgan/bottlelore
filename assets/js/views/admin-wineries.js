@@ -3,6 +3,7 @@ import { escapeHtml, showToast, slugify } from '../utils.js';
 import { navigate } from '../router.js';
 import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
+import { createImageUpload } from '../components/image-upload.js';
 
 export async function renderWineryList(container) {
   container.innerHTML = '<div class="loading">Loading wineries...</div>';
@@ -149,6 +150,9 @@ export async function renderWineryForm(container, wineryId) {
         <label for="winery-name">Name</label>
         <input type="text" id="winery-name" name="name" required value="${escapeHtml(winery?.name || '')}" />
 
+        <label>Logo</label>
+        <div id="winery-logo-container"></div>
+
         <label for="winery-slug">Slug</label>
         <input type="text" id="winery-slug" name="slug" required value="${escapeHtml(winery?.slug || '')}" pattern="[a-z0-9-]+" title="Lowercase letters, numbers, and hyphens only" />
 
@@ -193,6 +197,14 @@ export async function renderWineryForm(container, wineryId) {
     </div>
   `;
 
+  const logoUpload = createImageUpload(document.getElementById('winery-logo-container'), {
+    bucket: 'winery-logos',
+    pathPrefix: isEdit ? winery.id : 'new',
+    currentUrl: winery?.logo_url || null,
+    label: 'Winery Logo',
+    id: 'winery-logo',
+  });
+
   document.getElementById('cancel-btn').addEventListener('click', () => navigate('/admin/wineries'));
 
   // Auto-generate slug from name for new wineries
@@ -225,6 +237,7 @@ export async function renderWineryForm(container, wineryId) {
       social_facebook: document.getElementById('winery-facebook').value.trim() || null,
       social_instagram: document.getElementById('winery-instagram').value.trim() || null,
       social_twitter: document.getElementById('winery-twitter').value.trim() || null,
+      logo_url: logoUpload.getUrl(),
     };
 
     if (isEdit) {

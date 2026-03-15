@@ -5,6 +5,7 @@ import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
 import { generateQR, getBottleUrl } from '../components/qr-generator.js';
 import { createTagInput } from '../components/tag-input.js';
+import { createImageUpload } from '../components/image-upload.js';
 
 export async function renderWineList(container) {
   container.innerHTML = '<div class="loading">Loading wines...</div>';
@@ -162,6 +163,9 @@ export async function renderWineForm(container, wineId) {
         <label for="wine-tasting-notes">Tasting Notes</label>
         <textarea id="wine-tasting-notes" name="tasting_notes">${escapeHtml(wine?.tasting_notes || '')}</textarea>
 
+        <label>Wine Image</label>
+        <div id="wine-image-container"></div>
+
         <label>Food Pairings</label>
         <div id="wine-pairings-container"></div>
 
@@ -176,6 +180,14 @@ export async function renderWineForm(container, wineId) {
       </section>` : ''}
     </div>
   `;
+
+  const wineImageUpload = createImageUpload(document.getElementById('wine-image-container'), {
+    bucket: 'wine-images',
+    pathPrefix: `${winery.id}`,
+    currentUrl: wine?.image_url || null,
+    label: 'Wine Image',
+    id: 'wine-image',
+  });
 
   const pairingsInput = createTagInput(document.getElementById('wine-pairings-container'), {
     initialTags: wine?.food_pairings || [],
@@ -205,6 +217,7 @@ export async function renderWineForm(container, wineId) {
       description: document.getElementById('wine-description').value.trim() || null,
       tasting_notes: document.getElementById('wine-tasting-notes').value.trim() || null,
       food_pairings: pairingsInput.getTags(),
+      image_url: wineImageUpload.getUrl(),
     };
 
     submitBtn.disabled = true;

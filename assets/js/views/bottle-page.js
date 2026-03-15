@@ -80,6 +80,8 @@ export async function render(container, winerySlug, wineId) {
         ${wine.vintage_year ? `<span class="bottle-page__vintage">${escapeHtml(String(wine.vintage_year))}</span>` : ''}
       </header>
 
+      ${wine.image_url ? `<img class="bottle-page__image" src="${escapeHtml(wine.image_url)}" alt="${escapeHtml(wine.name)}" />` : ''}
+
       <div class="bottle-page__details">
         ${wine.varietal ? `<p class="bottle-page__varietal">${escapeHtml(wine.varietal)}</p>` : ''}
         ${wine.region ? `<p class="bottle-page__region">${escapeHtml(wine.region)}</p>` : ''}
