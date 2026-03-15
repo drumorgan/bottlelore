@@ -1,5 +1,5 @@
 import * as logger from '../logger.js';
-import { showToast } from '../utils.js';
+import { showToast, escapeHtml } from '../utils.js';
 import QRCode from 'qrcode';
 
 export async function generateQR(container, url) {
@@ -55,15 +55,16 @@ export function printQR(canvas, wineName) {
     showToast('Pop-up blocked — please allow pop-ups to print.', 'error');
     return;
   }
+  const safeName = escapeHtml(wineName);
   win.document.write(`<!DOCTYPE html>
-<html><head><title>QR — ${wineName.replace(/</g, '&lt;')}</title>
+<html><head><title>QR — ${safeName}</title>
 <style>
   body { text-align: center; font-family: sans-serif; padding: 2rem; }
   img { max-width: 400px; }
   h1 { font-size: 1.25rem; margin-bottom: 1rem; }
   @media print { button { display: none; } }
 </style></head><body>
-<h1>${wineName.replace(/</g, '&lt;')}</h1>
+<h1>${safeName}</h1>
 <img src="${canvas.toDataURL('image/png')}" alt="QR Code" />
 <br><button onclick="window.print()">Print</button>
 </body></html>`);
