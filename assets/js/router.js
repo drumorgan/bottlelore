@@ -11,8 +11,7 @@ import * as logger from './logger.js';
 //   /admin/wines/:id/edit            → edit wine
 //   /admin/wineries                  → super admin winery list
 //   /admin/wineries/new              → add winery
-//   /admin/wineries/:id/edit         → edit winery
-//   /admin/winery/profile            → owner edits own winery
+//   /admin/winery/profile            → winery settings (owner + super admin)
 //   /admin/flights                   → flight list
 //   /admin/flights/new               → add flight
 //   /admin/flights/:id/edit          → edit flight
@@ -38,7 +37,6 @@ export function parsePath(pathname = window.location.pathname) {
     if (parts[1] === 'wineries') {
       if (parts.length === 2) return { view: 'admin-wineries' };
       if (parts[2] === 'new') return { view: 'admin-winery-new' };
-      if (parts[3] === 'edit') return { view: 'admin-winery-edit', wineryId: parts[2] };
     }
 
     if (parts[1] === 'winery' && parts[2] === 'profile') {
