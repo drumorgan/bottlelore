@@ -37,13 +37,13 @@ if (file_exists($manifestPath)) {
     </script>
 </head>
 <body>
-    <div id="app">
-      <div id="loading" style="font-family: system-ui, sans-serif; max-width: 480px; margin: 60px auto; padding: 0 20px;">
-        <h1>BottleLore</h1>
-        <p>Loading app...</p>
-        <details style="margin-top: 20px; font-size: 0.85em; color: #888;">
-          <summary>Diagnostics</summary>
-          <pre style="white-space: pre-wrap; word-break: break-all; background: #1a1a1a; padding: 12px; border-radius: 6px; margin-top: 8px;">
+    <div id="app"></div>
+
+    <!-- Diagnostics (iPad has no DevTools — errors surface here) -->
+    <div id="diagnostics" style="display: none; font-family: system-ui, sans-serif; max-width: 480px; margin: 20px auto; padding: 0 20px; font-size: 0.85em; color: #888;">
+      <details>
+        <summary>Diagnostics</summary>
+        <pre style="white-space: pre-wrap; word-break: break-all; background: #1a1a1a; padding: 12px; border-radius: 6px; margin-top: 8px;">
 Bundle: <?php echo $bundleFile ? htmlspecialchars($bundleFile) : 'NOT FOUND (using dev fallback)'; ?>
 
 Manifest: <?php echo file_exists($manifestPath) ? 'found' : 'MISSING at ' . htmlspecialchars($manifestPath); ?>
@@ -54,9 +54,8 @@ Anon Key: <?php echo !empty($supabaseKey) ? 'set (' . substr($supabaseKey, 0, 20
 
 Sentry: <?php echo !empty($sentryDsn) ? 'set' : 'not set'; ?>
 </pre>
-          <pre id="js-errors" style="white-space: pre-wrap; word-break: break-all; background: #2a1a1a; padding: 12px; border-radius: 6px; margin-top: 8px; color: #f88;"></pre>
-        </details>
-      </div>
+        <pre id="js-errors" style="white-space: pre-wrap; word-break: break-all; background: #2a1a1a; padding: 12px; border-radius: 6px; margin-top: 8px; color: #f88;"></pre>
+      </details>
     </div>
 
     <!-- Catch JS errors visibly (iPad has no DevTools) -->
@@ -64,7 +63,9 @@ Sentry: <?php echo !empty($sentryDsn) ? 'set' : 'not set'; ?>
       var errBox = null;
       function showErr(msg) {
         if (!errBox) errBox = document.getElementById('js-errors');
-        if (errBox) errBox.textContent += msg + '\n';
+        if (errBox) { errBox.textContent += msg + '\n'; }
+        var diag = document.getElementById('diagnostics');
+        if (diag) diag.style.display = '';
       }
       window.addEventListener('error', function(e) { showErr('ERROR: ' + e.message + ' (' + e.filename + ':' + e.lineno + ')'); });
       window.addEventListener('unhandledrejection', function(e) { showErr('PROMISE: ' + (e.reason?.message || e.reason)); });
