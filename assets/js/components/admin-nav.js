@@ -6,6 +6,7 @@ import * as state from '../state.js';
 const NAV_ITEMS = {
   super_admin: [
     { label: 'Wineries', path: '/admin/wineries' },
+    { label: 'Winery Settings', path: '/admin/winery/profile' },
     { label: 'Wines', path: '/admin/wines' },
     { label: 'Flights', path: '/admin/flights' },
     { label: 'Staff', path: '/admin/staff' },
