@@ -2,8 +2,8 @@ import * as logger from './logger.js';
 import { registerGlobalErrorHandlers, showToast } from './utils.js';
 import { parsePath } from './router.js';
 import { onAuthStateChange } from './supabase-gateway.js';
-import { setCurrentUser, resetAllState, isLoggedIn, setUserRole, setSuperAdmin } from './state.js';
-import { checkIsSuperAdmin, getUserRole } from './supabase-gateway.js';
+import { setCurrentUser, resetAllState, isLoggedIn, setUserRole, setSuperAdmin, setUserWineryAssignments } from './state.js';
+import { checkIsSuperAdmin, getAdminWineries } from './supabase-gateway.js';
 import { init as initTheme, renderToggle as renderThemeToggle } from './theme.js';
 
 // Build info is injected by Vite at compile time — use try/catch for dev/unbundled mode
@@ -115,8 +115,13 @@ async function detectRole(userId) {
     if (isSA) {
       setUserRole('super_admin');
     } else {
-      const roleData = await getUserRole(userId);
-      setUserRole(roleData ? roleData.role : 'staff');
+      const assignments = await getAdminWineries(userId);
+      setUserWineryAssignments(assignments);
+      if (assignments.length > 0) {
+        setUserRole(assignments[0].role);
+      } else {
+        setUserRole('staff');
+      }
     }
   } catch (err) {
     logger.error('Role detection failed on auth restore', err);
