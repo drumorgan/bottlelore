@@ -25,6 +25,11 @@ export async function renderStaffList(container) {
       ? '<tr><td colspan="4">No staff members yet. Invite someone to get started.</td></tr>'
       : staff.map(s => {
         const isSelf = s.user_id === currentUser?.id;
+        const newRole = s.role === 'staff' ? 'owner' : 'staff';
+        const roleLabel = s.role === 'staff' ? 'Promote to Owner' : 'Demote to Staff';
+        const roleBtn = canRemove && !isSelf
+          ? `<button class="btn btn--small btn--outline" data-change-role="${escapeHtml(s.admin_id)}" data-email="${escapeHtml(s.email)}" data-new-role="${newRole}">${roleLabel}</button>`
+          : '';
         const removeBtn = canRemove && !isSelf
           ? `<button class="btn btn--small btn--danger" data-remove="${escapeHtml(s.admin_id)}" data-email="${escapeHtml(s.email)}">Remove</button>`
           : '';
@@ -38,7 +43,7 @@ export async function renderStaffList(container) {
               ${isSelf ? ' <span class="staff-you">(you)</span>' : ''}
             </td>
             <td>${new Date(s.created_at).toLocaleDateString()}</td>
-            <td class="admin-table__actions">${removeBtn}</td>
+            <td class="admin-table__actions">${roleBtn} ${removeBtn}</td>
           </tr>
         `;
       }).join('');
@@ -60,6 +65,26 @@ export async function renderStaffList(container) {
     if (inviteBtn) {
       inviteBtn.addEventListener('click', () => navigate('/admin/staff/invite'));
     }
+
+    // Change role buttons
+    container.querySelectorAll('[data-change-role]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const adminId = btn.dataset.changeRole;
+        const email = btn.dataset.email;
+        const newRole = btn.dataset.newRole;
+        const action = newRole === 'owner' ? 'Promote' : 'Demote';
+        if (!confirm(`${action} ${email} to ${newRole}?`)) return;
+
+        try {
+          await gateway.updateWineryAdminRole(adminId, newRole);
+          showToast(`${email} is now ${newRole}.`, 'success');
+          await renderStaffList(container);
+        } catch (err) {
+          logger.error('Failed to change role', err);
+          showToast('Could not change role.', 'error');
+        }
+      });
+    });
 
     // Remove buttons
     container.querySelectorAll('[data-remove]').forEach(btn => {
@@ -92,11 +117,7 @@ export async function renderInviteForm(container) {
     return;
   }
 
-  const isSA = state.isSuperAdmin();
-
-  const roleOptions = isSA
-    ? `<option value="staff">Staff</option><option value="owner">Owner</option>`
-    : `<option value="staff">Staff</option>`;
+  const roleOptions = `<option value="staff">Staff</option><option value="owner">Owner</option>`;
 
   container.innerHTML = `
     <div class="admin-invite-form">

@@ -337,6 +337,19 @@ export async function inviteUser(email, wineryId, role) {
 }
 
 /**
+ * Update a winery admin's role (e.g. promote staff → owner).
+ * @param {string} adminId — winery_admins row ID
+ * @param {string} newRole — 'owner' or 'staff'
+ */
+export async function updateWineryAdminRole(adminId, newRole) {
+  const { error } = await getClient()
+    .from(TABLES.WINERY_ADMINS)
+    .update({ role: newRole })
+    .eq('id', adminId);
+  if (error) throw error;
+}
+
+/**
  * Remove a winery admin by their winery_admins row ID.
  */
 export async function removeWineryAdmin(adminId) {
