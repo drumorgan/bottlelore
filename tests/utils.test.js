@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { escapeHtml, showToast, formatDate, slugify } from '../assets/js/utils.js';
+import { escapeHtml, showToast, formatDate, slugify, MAX_RETRIES, RETRY_DELAY_MS, isNetworkError, delay } from '../assets/js/utils.js';
 
 // ── escapeHtml ──────────────────────────────────────────────────────────────
 
@@ -162,5 +162,66 @@ describe('slugify', () => {
 
   it('handles mixed separators', () => {
     expect(slugify('hello - world _ test')).toBe('hello-world-test');
+  });
+});
+
+// ── Network retry helpers ──────────────────────────────────────────────────
+
+describe('MAX_RETRIES', () => {
+  it('is 2', () => {
+    expect(MAX_RETRIES).toBe(2);
+  });
+});
+
+describe('RETRY_DELAY_MS', () => {
+  it('is 1500', () => {
+    expect(RETRY_DELAY_MS).toBe(1500);
+  });
+});
+
+describe('isNetworkError', () => {
+  it('returns false for PGRST116 (row not found)', () => {
+    expect(isNetworkError({ code: 'PGRST116', message: 'no rows' })).toBe(false);
+  });
+
+  it('returns true for "Failed to fetch"', () => {
+    expect(isNetworkError({ message: 'Failed to fetch' })).toBe(true);
+  });
+
+  it('returns true for "NetworkError"', () => {
+    expect(isNetworkError({ message: 'NetworkError when attempting to fetch' })).toBe(true);
+  });
+
+  it('returns true for Safari "Load failed"', () => {
+    expect(isNetworkError({ message: 'Load failed' })).toBe(true);
+  });
+
+  it('returns true for TypeError without code (fetch failure)', () => {
+    const err = new TypeError('fetch failed');
+    expect(isNetworkError(err)).toBe(true);
+  });
+
+  it('returns false for TypeError with a code', () => {
+    const err = new TypeError('something');
+    err.code = '42501';
+    expect(isNetworkError(err)).toBe(false);
+  });
+
+  it('returns false for null/undefined', () => {
+    expect(isNetworkError(null)).toBe(false);
+    expect(isNetworkError(undefined)).toBe(false);
+  });
+});
+
+describe('delay', () => {
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it('resolves after the specified ms', async () => {
+    let resolved = false;
+    delay(500).then(() => { resolved = true; });
+    expect(resolved).toBe(false);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(resolved).toBe(true);
   });
 });

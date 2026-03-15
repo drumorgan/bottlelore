@@ -42,6 +42,23 @@ export function slugify(str) {
     .replace(/^-+|-+$/g, '');
 }
 
+// Network retry helpers — shared by public views (bottle, flight, winery)
+export const MAX_RETRIES = 2;
+export const RETRY_DELAY_MS = 1500;
+
+export function isNetworkError(err) {
+  if (err?.code === 'PGRST116') return false; // row not found — not a network issue
+  if (err?.message?.includes('Failed to fetch')) return true;
+  if (err?.message?.includes('NetworkError')) return true;
+  if (err?.message?.includes('Load failed')) return true; // Safari
+  if (err?.name === 'TypeError' && !err?.code) return true; // fetch() throws TypeError on network failure
+  return false;
+}
+
+export function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 // Register global error handlers — call once from app.js
 export function registerGlobalErrorHandlers() {
   window.addEventListener('unhandledrejection', (event) => {

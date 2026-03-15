@@ -1,24 +1,8 @@
 import * as logger from '../logger.js';
-import { escapeHtml, showToast } from '../utils.js';
+import { escapeHtml, showToast, MAX_RETRIES, RETRY_DELAY_MS, isNetworkError, delay } from '../utils.js';
 import { getPublicWineryData } from '../supabase-gateway.js';
 import { navigate } from '../router.js';
 import { applyTheme } from '../theme.js';
-
-const MAX_RETRIES = 2;
-const RETRY_DELAY_MS = 1500;
-
-function isNetworkError(err) {
-  if (err?.code === 'PGRST116') return false;
-  if (err?.message?.includes('Failed to fetch')) return true;
-  if (err?.message?.includes('NetworkError')) return true;
-  if (err?.message?.includes('Load failed')) return true;
-  if (err?.name === 'TypeError' && !err?.code) return true;
-  return false;
-}
-
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 export async function render(container, winerySlug) {
   logger.breadcrumb('render winery-page', 'view', { winerySlug });
