@@ -2,6 +2,7 @@ import * as logger from '../logger.js';
 import { escapeHtml, showToast } from '../utils.js';
 import { getPublicWineryData } from '../supabase-gateway.js';
 import { navigate } from '../router.js';
+import { applyTheme } from '../theme.js';
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1500;
@@ -59,6 +60,8 @@ export async function render(container, winerySlug) {
   }
 
   const { winery, wines, flights } = data;
+
+  applyTheme(winery.theme_preference);
 
   const flightCards = flights.map(f => {
     const wineCount = f.flight_wines?.length || 0;

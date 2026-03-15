@@ -1,9 +1,7 @@
 import * as logger from './logger.js';
 
-const STORAGE_KEY = 'bl-theme';
 const VALID_MODES = ['day', 'night', 'auto'];
-
-let currentMode = 'auto';
+let activeMode = 'auto';
 
 function getSystemTheme() {
   if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -17,73 +15,37 @@ function resolveTheme(mode) {
   return mode;
 }
 
-function applyTheme(theme) {
+function applyClass(theme) {
   document.documentElement.classList.remove('day', 'night');
   document.documentElement.classList.add(theme);
 }
 
-function updateToggleUI() {
-  document.querySelectorAll('.theme-toggle__btn').forEach(btn => {
-    const mode = btn.getAttribute('data-theme');
-    btn.classList.toggle('theme-toggle__btn--active', mode === currentMode);
-  });
+/**
+ * Apply a winery's theme preference to the page.
+ * Called by public views once they have winery data.
+ *   'day'   → always light
+ *   'night' → always dark
+ *   'auto'  → follows device prefers-color-scheme (default)
+ */
+export function applyTheme(preference) {
+  activeMode = VALID_MODES.includes(preference) ? preference : 'auto';
+  applyClass(resolveTheme(activeMode));
+  logger.breadcrumb('theme applied', 'ui', { preference: activeMode });
 }
 
-export function setMode(mode) {
-  if (!VALID_MODES.includes(mode)) return;
-  currentMode = mode;
-  try {
-    localStorage.setItem(STORAGE_KEY, mode);
-  } catch { /* private browsing */ }
-  applyTheme(resolveTheme(mode));
-  updateToggleUI();
-  logger.breadcrumb('theme changed', 'ui', { mode });
-}
-
-export function getMode() {
-  return currentMode;
-}
-
+/**
+ * Called once at startup. Applies 'auto' as default and listens for
+ * system theme changes so 'auto' stays reactive.
+ */
 export function init() {
-  // Restore saved preference
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && VALID_MODES.includes(saved)) {
-      currentMode = saved;
-    }
-  } catch { /* private browsing */ }
+  activeMode = 'auto';
+  applyClass(resolveTheme('auto'));
 
-  // Apply immediately
-  applyTheme(resolveTheme(currentMode));
-
-  // Listen for system theme changes (relevant when in auto mode)
   if (window.matchMedia) {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      if (currentMode === 'auto') {
-        applyTheme(resolveTheme('auto'));
+      if (activeMode === 'auto') {
+        applyClass(getSystemTheme());
       }
     });
   }
-}
-
-export function renderToggle() {
-  const existing = document.querySelector('.theme-toggle');
-  if (existing) existing.remove();
-
-  const toggle = document.createElement('div');
-  toggle.className = 'theme-toggle';
-  toggle.setAttribute('aria-label', 'Theme switcher');
-  toggle.innerHTML = `
-    <button class="theme-toggle__btn" data-theme="day">Day</button>
-    <button class="theme-toggle__btn" data-theme="auto">Auto</button>
-    <button class="theme-toggle__btn" data-theme="night">Night</button>
-  `;
-  document.body.appendChild(toggle);
-
-  updateToggleUI();
-
-  toggle.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-theme]');
-    if (btn) setMode(btn.getAttribute('data-theme'));
-  });
 }

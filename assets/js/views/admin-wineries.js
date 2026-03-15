@@ -217,6 +217,13 @@ export async function renderWineryForm(container, wineryId) {
         <label for="winery-website">Website URL</label>
         <input type="url" id="winery-website" name="website_url" value="${escapeHtml(winery?.website_url || '')}" />
 
+        <label for="winery-theme">Guest Page Theme</label>
+        <select id="winery-theme" name="theme_preference">
+          <option value="auto" ${(winery?.theme_preference || 'auto') === 'auto' ? 'selected' : ''}>Auto (follows guest's device)</option>
+          <option value="day" ${winery?.theme_preference === 'day' ? 'selected' : ''}>Day (always light)</option>
+          <option value="night" ${winery?.theme_preference === 'night' ? 'selected' : ''}>Night (always dark)</option>
+        </select>
+
         <fieldset class="admin-winery-form__socials">
           <legend>Social Media</legend>
           <label for="winery-facebook">Facebook</label>
@@ -310,6 +317,7 @@ export async function renderWineryForm(container, wineryId) {
       social_instagram: document.getElementById('winery-instagram').value.trim() || null,
       social_twitter: document.getElementById('winery-twitter').value.trim() || null,
       logo_url: logoUpload.getUrl(),
+      theme_preference: document.getElementById('winery-theme').value,
     };
 
     if (isEdit) {

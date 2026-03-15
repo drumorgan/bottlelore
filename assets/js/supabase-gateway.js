@@ -118,7 +118,7 @@ export async function toggleWineryActive(id, isActive) {
 export async function getWineById(id) {
   const { data, error } = await getClient()
     .from(TABLES.WINES)
-    .select('*, wineries(name, slug)')
+    .select('*, wineries(name, slug, theme_preference)')
     .eq('id', id)
     .eq('is_active', true)
     .single();
@@ -169,7 +169,7 @@ export async function toggleWineActive(id, isActive) {
 export async function getPublicFlightById(id) {
   const { data, error } = await getClient()
     .from(TABLES.FLIGHTS)
-    .select('*, wineries(name, slug), flight_wines(sort_order, wines(id, name, varietal, vintage_year, price, description, tasting_notes, food_pairings, image_url, is_active))')
+    .select('*, wineries(name, slug, theme_preference), flight_wines(sort_order, wines(id, name, varietal, vintage_year, price, description, tasting_notes, food_pairings, image_url, is_active))')
     .eq('id', id)
     .eq('is_active', true)
     .single();

@@ -213,7 +213,7 @@ describe('supabase-gateway', () => {
 
       const result = await gateway.getWineById('wine-1');
       expect(mockFrom).toHaveBeenCalledWith('wines');
-      expect(chain.select).toHaveBeenCalledWith('*, wineries(name, slug)');
+      expect(chain.select).toHaveBeenCalledWith('*, wineries(name, slug, theme_preference)');
       expect(chain.eq).toHaveBeenCalledWith('id', 'wine-1');
       expect(chain.eq).toHaveBeenCalledWith('is_active', true);
       expect(result).toEqual(wine);
