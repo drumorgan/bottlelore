@@ -15,6 +15,25 @@ $sentryDsn    = getenv('SENTRY_DSN')         ?: (defined('SENTRY_DSN')        ? 
 
 // Supabase anon key is safe to expose — RLS enforces all permissions
 // NEVER expose service_role key here
+// Detect locale from Accept-Language header (first supported match wins)
+$supportedLocales = ['en', 'es'];
+$detectedLocale = 'en';
+$acceptLang = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? $_SERVER['HTTP_ACCEPT_LANGUAGE'] : '';
+if ($acceptLang) {
+  preg_match_all('/([a-z]{1,8}(?:-[a-z]{1,8})?)\s*(?:;\s*q\s*=\s*(1|0\.\d+))?/i', $acceptLang, $matches);
+  if (!empty($matches[1])) {
+    $langs = array_combine($matches[1], array_map(function($q) { return $q === '' ? 1.0 : (float)$q; }, $matches[2]));
+    arsort($langs);
+    foreach ($langs as $lang => $q) {
+      $code = strtolower(substr($lang, 0, 2));
+      if (in_array($code, $supportedLocales)) {
+        $detectedLocale = $code;
+        break;
+      }
+    }
+  }
+}
+
 $appConfig = [
   'supabase' => [
     'url'     => $supabaseUrl,
@@ -27,4 +46,5 @@ $appConfig = [
     'time' => defined('__BUILD_TIME__') ? __BUILD_TIME__ : '',
     'sha'  => defined('__BUILD_SHA__')  ? __BUILD_SHA__  : '',
   ],
+  'locale' => $detectedLocale,
 ];

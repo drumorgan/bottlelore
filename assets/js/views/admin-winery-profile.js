@@ -4,6 +4,7 @@ import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
 import { createImageUpload } from '../components/image-upload.js';
 import { generateQR, getWineryUrl, downloadQR, printQR } from '../components/qr-generator.js';
+import { createTranslationPanel } from '../components/translation-panel.js';
 
 export async function renderWineryProfile(container) {
   const winery = state.getCurrentWinery();
@@ -55,6 +56,8 @@ export async function renderWineryProfile(container) {
           <input type="url" id="profile-twitter" name="social_twitter" value="${escapeHtml(winery.social_twitter || '')}" />
         </fieldset>
 
+        <div id="profile-translations-container"></div>
+
         <button type="submit" class="btn btn--primary">Save Changes</button>
       </form>
       <section class="admin-winery-form__qr">
@@ -75,6 +78,20 @@ export async function renderWineryProfile(container) {
     currentUrl: winery.logo_url || null,
     label: 'Winery Logo',
     id: 'profile-logo',
+  });
+
+  const translationPanel = createTranslationPanel(document.getElementById('profile-translations-container'), {
+    fields: {
+      name: { label: 'Name', type: 'text' },
+      description: { label: 'Description', type: 'textarea' },
+      hours: { label: 'Hours', type: 'text' },
+    },
+    existingTranslations: winery.translations?.es || null,
+    getSourceValues: () => ({
+      name: winery.name,
+      description: document.getElementById('profile-description').value.trim(),
+      hours: document.getElementById('profile-hours').value.trim(),
+    }),
   });
 
   // Render QR code
@@ -106,6 +123,7 @@ export async function renderWineryProfile(container) {
       social_twitter: document.getElementById('profile-twitter').value.trim() || null,
       logo_url: logoUpload.getUrl(),
       theme_preference: document.getElementById('profile-theme').value,
+      translations: translationPanel.getTranslations() || winery.translations || {},
     };
 
     submitBtn.disabled = true;

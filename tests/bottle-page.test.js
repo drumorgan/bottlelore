@@ -14,6 +14,7 @@ vi.mock('../assets/js/logger.js', () => ({
 
 import { render } from '../assets/js/views/bottle-page.js';
 import { getWineById } from '../assets/js/supabase-gateway.js';
+import { setLocale } from '../assets/js/i18n.js';
 
 describe('bottle-page view', () => {
   let container;
@@ -23,6 +24,7 @@ describe('bottle-page view', () => {
     document.body.innerHTML = '';
     document.body.appendChild(container);
     vi.clearAllMocks();
+    setLocale('en');
   });
 
   it('shows loading state initially', async () => {

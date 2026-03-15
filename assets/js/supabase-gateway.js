@@ -384,3 +384,21 @@ export function getPublicUrl(bucket, path) {
     .getPublicUrl(path);
   return data.publicUrl;
 }
+
+// ── Translations ────────────────────────────────────────────────────────────
+
+/**
+ * Call the translate-content Edge Function to translate text via DeepL.
+ * @param {Object} fields — key/value pairs to translate (e.g. { name: 'Red Wine', description: '...' })
+ * @param {string} targetLocale — target locale code (e.g. 'es')
+ * @returns {Object} — translated key/value pairs
+ */
+export async function translateContent(fields, targetLocale) {
+  const { data, error } = await getClient()
+    .functions.invoke('translate-content', {
+      body: { fields, target_locale: targetLocale },
+    });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data.translations;
+}

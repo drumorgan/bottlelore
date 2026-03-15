@@ -656,6 +656,59 @@
   background: transparent;
 }
 
+/* ── Translation Panel ────────────────────────────────────────────────── */
+
+.translation-panel {
+  border: 1px solid #e0d8ee;
+  border-radius: 6px;
+  margin-top: 1.5rem;
+  background: #f9f7fc;
+}
+
+.translation-panel__summary {
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: #6b2fa0;
+  user-select: none;
+}
+
+.translation-panel__summary:hover {
+  background: #f0ebf7;
+  border-radius: 6px;
+}
+
+.translation-panel__body {
+  padding: 0 1rem 1rem;
+}
+
+.translation-panel__translate-btn {
+  margin-bottom: 0.75rem;
+}
+
+.translation-panel__input {
+  display: block;
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d0c4e0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: #fff;
+}
+
+.translation-panel__input:focus {
+  outline: none;
+  border-color: #6b2fa0;
+  box-shadow: 0 0 0 2px rgba(107, 47, 160, 0.15);
+}
+
+textarea.translation-panel__input {
+  min-height: 4rem;
+  resize: vertical;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 600px) {
