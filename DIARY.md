@@ -1,16 +1,18 @@
-# BottleLore Build Diary
+# Vibe Coding with Claude: From Zero to Live App
 
-A step-by-step guide to building a real web app with AI — written for someone who's never done it before. If you can describe what you want, you can vibe-code it into existence. This diary shows you how.
+A step-by-step guide to building a real web app with AI — written for someone who's never done it before. If you can describe what you want, you can vibe-code it into existence. This guide shows you how.
+
+We built this guide while creating [BottleLore](https://bottlelore.com), a winery QR code app. Every lesson here came from a real mistake, a real fix, or a real "aha" moment — but the advice applies to any project.
 
 ---
 
 ## How to Use This Guide
 
-This isn't a textbook. It's a real project diary — mistakes, detours, and all. Each chapter covers one working session. By the end, you'll have a live web app that real people use.
+This isn't a textbook. It's a real project diary — mistakes, detours, and all. Each chapter covers one phase of development. By the end, you'll understand the full arc from "I have an idea" to "people are using my app."
 
 **What you need to start:**
-- A description of what you want to build (ours was a PDF from the client)
-- An AI coding assistant (we used Claude Code)
+- A description of what you want to build (a doc, a sketch, even a paragraph)
+- An AI coding assistant (we used [Claude Code](https://docs.anthropic.com/en/docs/claude-code))
 - A willingness to learn as you go
 
 **What you don't need:**
@@ -20,600 +22,447 @@ This isn't a textbook. It's a real project diary — mistakes, detours, and all.
 
 ---
 
-## Chapter 1: Getting a Live URL
+## Chapter 1: Start with the Pipeline, Not the App
 
-**Date:** March 12, 2026
-**Goal:** Go from nothing to a live website that updates automatically when you push code.
+**Goal:** Go from nothing to a live URL that updates automatically when you push code.
+
+Most people want to start writing the app. Don't. Start with the delivery pipeline — the system that gets your code from your computer to a live URL. Once that works, every change you make is instantly visible to the world. This keeps momentum high and eliminates the "it works on my machine" problem.
 
 ### Step 1: Describe your project to the AI
 
-We started with a PDF from the client describing what they want — a winery app where guests scan QR codes to see tasting notes. We gave that PDF to Claude Code and asked it to create a kickoff document. The AI read the requirements and produced a detailed build plan broken into phases, with every file mapped out.
+Your first prompt sets the tone for the whole project. Give the AI everything you have: who the users are, what they need, what the constraints are. A PDF, a doc, a detailed paragraph — whatever you've got.
 
-**Vibe coder tip:** Your first prompt sets the tone for the whole project. Give the AI as much context as you can — who the users are, what they need, what the constraints are. The better the brief, the better the code.
+We gave Claude a client requirements PDF and asked it to create a kickoff document. It produced a detailed build plan broken into phases, with every file mapped out. That kickoff document became our roadmap for the entire project.
 
-### Step 2: Get your domain pointed at hosting
+**Tip:** The better the brief, the better the code. Spend 10 minutes making your initial description detailed. It saves hours later.
 
-The domain `bottlelore.com` was already registered but wasn't connected to a server. We submitted DNS nameserver changes to point it at InMotion Hosting.
+### Step 2: Get hosting and a domain
 
-Then we discovered there was no hosting plan for this domain. A quick chat with InMotion support confirmed the existing shared hosting account could cover it — no extra cost.
+You need somewhere to put your site. The specifics depend on your hosting provider, but the basics are:
 
-**Vibe coder tip:** DNS changes can take minutes to hours to propagate. Don't panic if the site doesn't load right away. Do something else and come back.
+1. **Register a domain** (or use one you already have)
+2. **Point DNS to your hosting** — change nameservers or add DNS records
+3. **Create the site directory** on your server
+4. **Put a "Hello World" page there** — just to prove the chain works
 
-### Step 3: Set up the hosting directory
+DNS changes can take minutes to hours to propagate. Don't panic if the site doesn't load right away. Do something else and come back.
 
-InMotion's cPanel created a new directory at `~/bottlelore.com/` when we added the domain. The server automatically serves files from this folder when someone visits the URL.
+### Step 3: Set up automated deployment
 
-We put a simple `index.html` file with "Hello World" in it — just to prove the chain works.
+You don't want to manually upload files every time you make a change. Set up a pipeline: push code to GitHub, and it automatically appears on the live site.
 
-### Step 4: Set up automated deployment
+The basic recipe:
+1. **Create deployment credentials** scoped to your site's directory only. If you're using FTP, create an FTP account limited to just your site folder. This is critical — deploy tools often sync by deleting files that aren't in the repo. A scoped account can't accidentally delete your other sites.
+2. **Store credentials as GitHub Secrets** — never in your code.
+3. **Create a GitHub Actions workflow** — a YAML file that says "on push to main, deploy to the server."
+4. **Test it** — push a change, watch the action run, verify the change appears on the live site.
 
-We didn't want to manually upload files every time we make a change. So we created a pipeline: push code to GitHub, and it automatically appears on the live site.
+### What you have at the end of Chapter 1
 
-Here's what that involved:
-
-1. **Created an FTP account in cPanel** — scoped specifically to the `bottlelore.com/` directory. This is critical: the deploy tool syncs files by deleting anything on the server that isn't in the repo. A scoped account means it can't accidentally nuke your other sites.
-
-2. **Added GitHub secrets** — the FTP server address, username, and password were stored as encrypted secrets in the GitHub repo settings. The code never sees the actual credentials.
-
-3. **Created a GitHub Actions workflow** — a YAML file (`.github/workflows/deploy.yml`) that tells GitHub: "Every time someone pushes to the `main` branch, check out the code and FTP it to the server."
-
-4. **First deploy** — merged to main, the action ran, files appeared on the server. Visited `bottlelore.com` and saw our hello world page.
-
-### What we had at the end of Chapter 1
-
-- A live website at `bottlelore.com`
+- A live website at your domain
 - Automated deployment: push to GitHub → site updates automatically
 - Zero application code — but the entire delivery pipeline works
 
 ### Key lessons
 
-- **Infrastructure first.** Get your deployment pipeline working before you write a single line of application code. Every change you make will be immediately visible on a real URL. This keeps momentum high.
-- **Scope your FTP accounts.** Seriously. The deploy tool mirrors your repo and deletes extras. If your FTP user has full server access, that's a disaster waiting to happen.
-- **Start with hello world.** The simplest possible proof that the whole chain works: code in repo → GitHub → FTP → live site. Once that works, build with confidence.
+- **Infrastructure first.** Get deployment working before you write a single line of application code. Every future change will be immediately visible on a real URL.
+- **Scope your deploy credentials.** The deploy tool mirrors your repo and deletes extras. If your deploy user has full server access, that's a disaster waiting to happen.
+- **Start with Hello World.** The simplest possible proof that the whole chain works: code in repo → GitHub → deploy → live site.
 
 ---
 
-## Chapter 2: Wiring Up the Plumbing
+## Chapter 2: Wire Up the Plumbing
 
-**Date:** March 12–13, 2026
-**Goal:** Connect the database and error monitoring — the invisible infrastructure that every real app needs.
+**Goal:** Connect the database, error monitoring, and project structure — the invisible infrastructure that every real app needs.
 
-### Step 5: Set up the database connection
+### Step 4: Set up config management
 
-BottleLore needs a database to store wines, wineries, and tasting notes. We're using Supabase — a hosted Postgres database with a JavaScript client library.
+Your app will need API keys, database URLs, and other credentials. Establish a config pattern early:
 
-The kickoff document specifies a "config pattern" — PHP reads credentials from environment variables (for production) or a local config file (for development), then injects them into the page as `window.APP_CONFIG`. JavaScript never hardcodes API keys.
+- **Never hardcode credentials in JavaScript.** They'd be visible to anyone who views your page source.
+- **Use server-side injection.** Have your server (PHP, Node, etc.) read credentials from environment variables or a local config file, then inject them into the page as a JavaScript variable.
+- **Git-ignore local config files.** Credentials stay on the machine, never in the repo.
 
-We created `api/config.php` with a three-tier credential resolution: env vars → `config.local.php` → null. The config gets JSON-encoded into a `<script>` tag inside `index.php`.
+This pattern means the same codebase works in development, CI, and production without environment file gymnastics.
 
-**Vibe coder tip:** This pattern — server injects config, JavaScript reads it — means the same codebase works in dev, CI, and production without `.env` file gymnastics in JavaScript. Ask your AI to use this pattern early. It saves headaches later.
+### Step 5: Set up error monitoring
 
-### Step 6: Set up error monitoring
+If you're building for mobile, tablets, or any device without developer tools: **error monitoring is not optional.** When something breaks in production, you need to know — and users won't tell you. They'll just leave.
 
-Here's the thing about building for iPad: there's no developer console. No DevTools. If something breaks in production, you'd never know unless a user tells you — and they usually just leave.
+Services like [Sentry](https://sentry.io) catch JavaScript errors automatically and report them to a dashboard. Setup takes about 5 minutes. Load the monitoring script before your application code so it catches errors even during initialization.
 
-Sentry catches JavaScript errors automatically and reports them to a dashboard.
+**Tip:** Set up error monitoring early. It costs nothing for small projects. You'll thank yourself the first time you catch a silent error.
 
-Setup:
-1. Created a new "bottlelore" project in Sentry
-2. Picked "Browser JavaScript" as the platform
-3. Got a Sentry DSN (a URL that identifies your project)
-4. Updated `index.php` to load the Sentry script in the `<head>` — before any application code, so it catches errors even during initialization
+### Step 6: Create the project instruction file
 
-**Vibe coder tip:** Set up error monitoring early. It costs nothing for small projects. You'll thank yourself the first time you catch a silent error that would have gone unnoticed.
+This is the **single most important thing in your repo for vibe coding**: a file that tells your AI assistant how to behave in this project.
 
-### Step 7: Create the project instruction file
+Create a `CLAUDE.md` file (or equivalent) that includes:
+- **Hard rules** — things the AI must never violate (e.g., "only one file talks to the database")
+- **Tech stack** — what tools and libraries you're using
+- **Build order** — which modules depend on which
+- **Known gotchas** — platform quirks, browser bugs, deployment issues
+- **Deployment flow** — how code gets from repo to production
 
-We created `CLAUDE.md` — a file that tells the AI assistant how to behave in this project. It includes hard rules (like "only one file talks to the database"), the tech stack, known gotchas, and deployment steps.
+This file is your AI's memory between sessions. Without it, every new session starts from zero. With it, the AI picks up exactly where it left off and follows your rules.
 
-This file is the single most important thing in the repo for vibe coding. It's your AI's memory between sessions. Without it, every new session starts from zero.
+**Tip:** Your `CLAUDE.md` is your project's constitution. Put your non-negotiable rules there. The AI reads it at the start of every session and follows it.
 
-**Vibe coder tip:** Your `CLAUDE.md` (or equivalent instruction file) is your project's constitution. Put your non-negotiable rules there. The AI reads it at the start of every session and follows it.
+### Step 7: Set up the project scaffolding
 
-### Step 8: Finish the foundation files
+Before writing any application code, create the project structure:
 
-With the plumbing connected, we completed the remaining Phase 1 files:
+- **Package manager config** (`package.json`) — lists dependencies and build scripts
+- **Build tool config** (Vite, Webpack, etc.) — bundles your code for production
+- **Test runner config** — so you can verify things work
+- **Linter config** (ESLint, etc.) — catches mistakes automatically
+- **Server config** (`.htaccess`, `nginx.conf`, etc.) — routing, HTTPS, caching
+- **`.gitignore`** — keep build artifacts, node_modules, and secrets out of the repo
+- **Directory structure** — folders for JS, CSS, views, components, tests, docs
 
-| File | What it does |
-|------|-------------|
-| `package.json` | Lists project dependencies and build scripts |
-| `vite.config.js` | Configures the build tool (bundles JS for production) |
-| `vitest.config.js` | Configures the test runner |
-| `eslint.config.js` | Configures the code linter (catches mistakes) |
-| `.htaccess` | Server rules: HTTPS redirect, SPA routing, caching |
-| `.gitignore` | Tells Git which files to ignore |
-| `SECURITY-CHECKLIST.md` | Pre-deploy security verification checklist |
-| Directory scaffolding | Empty folders for JS, CSS, views, components, tests, docs |
+None of these are the actual app. They're the scaffolding the app will be built inside. A solid foundation means the AI can write clean, organized code instead of one giant messy file.
 
-**Vibe coder tip:** Notice that none of these files are the actual app. They're all scaffolding — the structure that the app will be built inside. A solid foundation means the AI can write clean, organized code in the next phase instead of one giant messy file.
+### What you have at the end of Chapter 2
 
-### What we had at the end of Chapter 2
-
-- Sentry connected and catching errors
-- Supabase credentials flowing through the config pattern
-- Build tooling configured (Vite, Vitest, ESLint)
+- Error monitoring connected and catching errors
+- Database credentials flowing through your config pattern
+- Build tooling configured
 - Complete project scaffolding ready for application code
-- **Phase 1: Complete**
 
 ### Key lessons
 
-- **Config injection beats hardcoded keys.** Having PHP inject credentials means one codebase works everywhere.
-- **Error monitoring is not optional.** Especially on iPad where you literally cannot open a console.
-- **The plan calls for many files, not one.** The kickoff document maps out 10+ individual JavaScript modules, each with a single responsibility. This isn't busywork — it's what lets the AI (and you) understand and modify the code later. One giant file becomes unmaintainable fast.
-- **One org, many projects.** You don't need separate Sentry accounts for each app. One organization holds all your projects cleanly.
+- **Config injection beats hardcoded keys.** One codebase works everywhere.
+- **Error monitoring is not optional.** Especially on devices where you can't open a console.
+- **The plan calls for many files, not one.** Multiple small modules with single responsibilities are what let the AI (and you) understand and modify the code later.
 
 ---
 
-## What's Next: Phase 2
+## Chapter 3: Build the Application
 
-Phase 2 is where the app comes to life. The kickoff document specifies these individual files to create:
+**Goal:** Create all the core modules, views, and styles — turning the scaffolding into a working application.
 
-**Core JS modules** (built in this order):
-1. `assets/js/logger.js` — All logging and Sentry integration
-2. `assets/js/utils.js` — Shared utilities (escapeHtml, showToast, etc.)
-3. `assets/js/database-tables.js` — Table name constants
-4. `assets/js/supabase-gateway.js` — The ONLY file that talks to the database
-5. `assets/js/state.js` — Application state management
-6. `assets/js/router.js` — URL routing for the single-page app
-7. `assets/js/app.js` — Entry point that wires everything together
+### Step 8: Build modules in dependency order
 
-**Views and components:**
-8. `assets/js/views/bottle-page.js` — What guests see when they scan a QR code
-9. `assets/js/views/admin.js` — The winery staff admin panel
-10. `assets/js/components/qr-generator.js` — Generates QR codes for bottles
+Your kickoff document should specify a build order. Follow it. Each module depends on the ones before it. Building in order means you never have circular dependency surprises.
 
-**Stylesheets:**
-11. `assets/css/main.css` — Global styles
-12. `assets/css/bottle-page.css` — Bottle page styles
-13. `assets/css/admin.css` — Admin panel styles
+A typical module structure for a web app:
 
-Each file has a single job. This is the architecture that keeps the project manageable as it grows.
+| Layer | Examples | Purpose |
+|-------|----------|---------|
+| Utilities | Logger, helpers, formatters | Shared tools everything else uses |
+| Data | Database gateway, table constants | One file owns all database access |
+| State | State manager | Plain getters/setters for app state |
+| Routing | Router | URL parsing and navigation |
+| Views | Page components | What users see and interact with |
+| Components | Reusable UI pieces | Shared across views |
+| Entry point | App initializer | Wires everything together |
 
----
+**The gateway pattern:** One file owns all database access. It seems strict, but it means you can search for any database call and find it in exactly one place. Same idea for logging — one file does all logging.
 
-## Chapter 3: Bringing the App to Life
+### Step 9: Build the views
 
-**Date:** March 13, 2026
-**Goal:** Build all Phase 2 core JS modules, views, components, and stylesheets — turning the scaffolding into a working application.
+Views are what users actually see. Each view exports a render function that the entry point calls. Key rules:
 
-### Step 9: Create the core JS modules
+- **Escape all user content.** Every piece of user-supplied data gets sanitized before being inserted into HTML. XSS vulnerabilities happen when you forget "just this one time."
+- **Surface all errors visually.** No `alert()` boxes, no console-only errors. Use toast notifications or visible error states.
+- **Keep views focused.** One view = one purpose. A public-facing page and an admin panel should be separate views.
 
-Following the build order from `CLAUDE.md` (logger → utils → database-tables → supabase-gateway → state → router → app), we created each module one at a time and ran the linter after each group.
+### Step 10: Style it
 
-| File | What it does |
-|------|-------------|
-| `assets/js/logger.js` | All console and Sentry logging. The only file allowed to use `console.*` |
-| `assets/js/utils.js` | Shared utilities: `escapeHtml()`, `showToast()`, `formatDate()`, `slugify()`, global error handlers |
-| `assets/js/database-tables.js` | Table name constants — single source of truth for DB table names |
-| `assets/js/supabase-gateway.js` | The **only** file that imports Supabase. Auth, wineries, wines, admin CRUD |
-| `assets/js/state.js` | Plain getter/setter state management. No reactive framework needed |
-| `assets/js/router.js` | SPA path parsing and `history.pushState` navigation |
-| `assets/js/app.js` | Entry point — wires routes, auth listener, error handlers, dynamic imports |
+Match your CSS structure to your view structure. Global styles in one file, view-specific styles in their own files. Mobile-first responsive design means it works on phones by default.
 
-**Vibe coder tip:** Notice how every module has exactly one job. The logger logs. The gateway talks to the database. The state holds data. When something breaks, you know exactly which file to look at. This isn't about being fancy — it's about staying sane when the project grows.
+### What you have at the end of Chapter 3
 
-### Step 10: Create the views
-
-Two views handle the entire UI:
-
-| File | What it does |
-|------|-------------|
-| `assets/js/views/bottle-page.js` | The public page guests see when scanning a QR code. Shows wine name, vintage, tasting notes, price, and food pairings |
-| `assets/js/views/admin.js` | The staff panel — login form, wine list table, and add/edit wine form. All in one file with internal routing |
-
-Both views follow the same pattern: export a `render(container, ...)` function that `app.js` calls via dynamic `import()`. Every piece of user content goes through `escapeHtml()` before hitting `innerHTML`. Every error shows a toast.
-
-### Step 11: Create the QR generator component
-
-`assets/js/components/qr-generator.js` wraps the `qrcode` npm library. It generates a canvas-based QR code for any bottle URL. Simple wrapper — one function in, one canvas out.
-
-### Step 12: Create the stylesheets
-
-Three CSS files, matching the structure:
-
-| File | What it does |
-|------|-------------|
-| `assets/css/main.css` | Global reset, typography, buttons, toast notifications, forms, loading states |
-| `assets/css/bottle-page.css` | The public wine page — clean, mobile-first, designed for quick scanning |
-| `assets/css/admin.css` | Login form, wine list table, wine edit form, responsive breakpoints |
-
-### What we had at the end of Chapter 3
-
-- All 7 core JS modules created and linting clean
-- 2 views (bottle-page, admin) with full CRUD UI
-- 1 component (QR generator)
-- 3 stylesheets
-- **Phase 2: Complete**
+- All core modules created and linting clean
+- Views with full UI
+- Reusable components
+- Stylesheets
+- A complete application (though not yet connected to real data)
 
 ### Key lessons
 
-- **Build order matters.** Each module depends on the ones before it. Logger first, then utils (which imports logger), then gateway (which imports both). Following the specified order means you never have circular dependency surprises.
-- **One file, one job.** The gateway pattern (one file owns all DB access) seems strict, but it means you can search for any Supabase call and find it in exactly one place. Same for logging, same for state.
-- **escapeHtml() everywhere.** Every single piece of user-supplied data gets escaped before `innerHTML`. This isn't paranoia — it's the rule. XSS vulnerabilities happen when you forget "just this one time."
-- **Toast is the only error UI.** No alerts, no console instructions (iPad has no console). Every error the user might encounter shows a toast. This is a hard constraint from the environment.
+- **Build order matters.** Logger first, then utils (which imports logger), then gateway (which imports both). Follow the dependency chain.
+- **One file, one job.** When something breaks, you know exactly which file to look at.
+- **Escape HTML everywhere.** This is a security rule, not a suggestion.
 
 ---
 
-## Chapter 4: Locking Down the Database
+## Chapter 4: Set Up Your Database
 
-**Date:** March 13, 2026
-**Goal:** Create the Supabase database schema — tables, Row Level Security, and test data — so the app has real data to talk to.
+**Goal:** Create the database schema — tables, security rules, and test data — so the app has real data to talk to.
 
-### Step 13: Create the database tables
+### Step 11: Design your tables
 
-The kickoff document specifies three tables:
+Start with the core entities your app needs. For every table:
 
-| Table | Purpose |
-|-------|---------|
-| `wineries` | One row per winery. Has a slug for URL routing, a name, and an active flag |
-| `wines` | One row per wine. Links to a winery via `winery_id`. Stores everything a guest sees: name, varietal, vintage, tasting notes, price, food pairings |
-| `winery_admins` | Links a Supabase auth user to a winery. Controls who can manage which wines |
+- Use UUID primary keys (not auto-incrementing integers) — they're safer for public-facing apps
+- Add `created_at` timestamps
+- Use foreign key constraints to keep data relationships clean
+- Add a soft-delete flag (like `is_active`) instead of actually deleting rows
 
-All three use UUID primary keys (via `gen_random_uuid()`), have `created_at` timestamps, and use foreign key constraints with `on delete cascade` to keep data clean.
+**Tip:** Soft delete (setting `is_active = false` instead of deleting rows) means you can always recover data. Your public queries filter on `is_active = true`, so deactivated records disappear from the user's view instantly.
 
-The `winery_admins` table has a `role` column with a check constraint: only `'owner'` or `'staff'` are valid values. And a unique constraint on `(user_id, winery_id)` prevents duplicate assignments.
+### Step 12: Lock down security
 
-**Vibe coder tip:** You don't need to understand every SQL keyword. The important thing is the *shape*: wineries have wines, admins belong to wineries. The SQL is in `docs/phase3-supabase-schema.sql` if you ever need to recreate it.
+If you're using a service like Supabase where the API key is in the browser, **Row Level Security (RLS) is your security layer, not your app code.**
 
-### Step 14: Enable Row Level Security
+The principle: "Deny everything unless a policy explicitly allows it."
 
-Row Level Security (RLS) is what makes Supabase safe to use with a public API key. Without RLS, anyone with the anon key could read, insert, update, or delete any row. With RLS enabled, every query is filtered through policies you define.
+- Enable RLS on every table (this blocks all access by default)
+- Create explicit policies for each operation (SELECT, INSERT, UPDATE, DELETE)
+- Public data gets policies with no auth check (just content filters like `is_active = true`)
+- Private data gets policies that verify the user's identity and permissions
+- Use database helper functions for permission checks (e.g., `is_admin()`)
 
-We enabled RLS on all three tables. After this step, *no one* can access any data until we create policies — it's locked down by default.
+Even if someone bypasses your UI entirely and calls the API directly, RLS ensures they can only do what the policies allow.
 
-**Vibe coder tip:** "Enable RLS" means "deny everything unless a policy explicitly allows it." This is the right default. It's much safer to start locked and open specific doors than to start open and try to close them.
+### Step 13: Seed test data
 
-### Step 15: Create RLS policies
+Insert realistic test data so you can verify the app works end-to-end. Include all the fields your views expect — don't leave optional fields empty during testing, or you'll never test the full render path.
 
-Six policies, each with a specific job:
+### Step 14: Connect the database to your app
 
-| Policy | Table | Who | What |
-|--------|-------|-----|------|
-| Public can view active wineries | wineries | Anyone (no login) | SELECT where `is_active = true` |
-| Admins can update own winery | wineries | Logged-in admin | UPDATE only if they're in `winery_admins` for that winery |
-| Public can view active wines | wines | Anyone (no login) | SELECT where `is_active = true` |
-| Admins can insert wines for own winery | wines | Logged-in admin | INSERT only if they're in `winery_admins` for that `winery_id` |
-| Admins can update wines for own winery | wines | Logged-in admin | UPDATE only if they're in `winery_admins` for that `winery_id` |
-| Admins can read own row | winery_admins | Logged-in user | SELECT only their own row (`user_id = auth.uid()`) |
+Your config pattern (from Chapter 2) already handles this. Two places need credentials:
 
-The key insight: **public SELECT policies have no auth check** — they use `is_active = true` as the only filter. This is what makes the QR scan bottle page work without login. All write policies check `auth.uid()` against the `winery_admins` table, ensuring admins can only touch their own winery's data.
+- **Local development:** A git-ignored config file on your machine
+- **Production:** Environment variables or a server-side config file created directly on the server (never in the repo)
 
-**Vibe coder tip:** Notice there's no DELETE policy anywhere. That's intentional — wines get soft-deleted by setting `is_active = false`. No data is ever permanently removed through the app. This is a safety net.
+### What you have at the end of Chapter 4
 
-### Step 16: Seed test data
-
-We inserted one test winery ("Test Winery" with slug `test-winery`) and two wines:
-
-1. **Estate Cabernet Sauvignon** — 2021 Napa Valley, $58/bottle. Grilled ribeye, aged cheddar, lamb chops.
-2. **Reserve Chardonnay** — 2022 Russian River Valley, $42/bottle. Pan-seared halibut, brie, roasted chicken.
-
-Both wines include full descriptions, tasting notes, and food pairings — the exact fields that the bottle page will display when a guest scans a QR code.
-
-### Step 17: Connect Supabase to the app
-
-The config pattern (from Chapter 2) already handles this. Two places need credentials:
-
-**For local development:** Create `config.local.php` in the project root with your Supabase URL and anon key. This file is git-ignored — it never leaves your machine.
-
-**For production:** Add `SUPABASE_URL` and `SUPABASE_ANON_KEY` as GitHub repository secrets. The deploy workflow passes these as environment variables, and `api/config.php` reads them with `getenv()`.
-
-The anon key is safe to expose in the browser — that's by design. RLS policies (Step 15) enforce all permissions. The `service_role` key must **never** appear in frontend code.
-
-### What we had at the end of Chapter 4
-
-- Three tables created: `wineries`, `wines`, `winery_admins`
-- Row Level Security enabled on all tables
-- Six RLS policies: public read for guests, winery-scoped write for admins
-- Test data: 1 winery, 2 wines with full tasting details
-- Supabase credentials documented for both local dev and production
-- Complete SQL saved in `docs/phase3-supabase-schema.sql`
-- **Phase 3: Complete**
+- Database tables created with proper relationships
+- Security rules enabled and tested
+- Test data seeded
+- App connected to the database in both dev and production
 
 ### Key lessons
 
-- **RLS is your security layer, not your app code.** Even if someone bypasses your UI entirely and calls the Supabase API directly, RLS ensures they can only do what the policies allow. The anon key is *meant* to be public — RLS is what makes that safe.
-- **Soft delete beats hard delete.** Setting `is_active = false` instead of deleting rows means you can always recover. The public SELECT policies filter on `is_active = true`, so deactivated wines disappear from the guest view instantly.
-- **Admin policies check winery ownership, not just "is logged in."** A logged-in user from Winery A cannot modify Winery B's wines. Every write policy joins against `winery_admins` to verify the relationship.
-- **The SQL is documentation.** We saved the complete schema in `docs/phase3-supabase-schema.sql`. If you ever need to recreate the database (new Supabase project, staging environment), you have the exact SQL ready to paste.
+- **RLS is your security layer.** The API key is *meant* to be public — security rules are what make that safe.
+- **Soft delete beats hard delete.** You can always recover. And your public queries just filter on a flag.
+- **Save your schema SQL.** If you ever need to recreate the database (new project, staging environment), you have the exact SQL ready.
+- **Admin policies check ownership, not just "is logged in."** A logged-in user from Organization A should not be able to modify Organization B's data.
 
 ---
 
-## Chapter 5: Making It Real — Build, Deploy, and Debug
+## Chapter 5: Ship It — Build, Deploy, and Debug
 
-**Date:** March 13, 2026
-**Goal:** Get the production bundle building in CI, deploying to the server, and loading in the browser.
+**Goal:** Get the production build working in CI, deploying to the server, and loading in the browser.
 
-### Step 18: Add a build step to the deploy workflow
+### Step 15: Add a build step to your deploy workflow
 
-Chapter 1's deploy workflow was simple: check out the code, FTP it to the server. But now we have a Vite build that bundles and minifies JavaScript. The raw source files alone won't work in production — we need the compiled bundle.
+Your Chapter 1 workflow was simple: push code, deploy it. But now you have a build step (bundling, minifying). Split the workflow into two jobs:
 
-We split the workflow into two jobs:
+1. **Build job** — install dependencies, run tests, run the build, verify the output exists, upload as an artifact
+2. **Deploy job** — download the build artifact, deploy to server
 
-1. **Build job** — checks out the code, runs `npm ci`, runs tests, runs `npm run build`, verifies that `assets/dist/.vite/manifest.json` exists, then uploads `assets/dist/` as a GitHub Actions artifact.
+The deploy job depends on the build job, so a broken build never reaches the live site.
 
-2. **Deploy job** — checks out the code, downloads the build artifact into `assets/dist/`, then FTPs everything to the server.
+**Tip:** Always verify your build output exists before deploying. A simple check like "does the manifest file exist?" catches silent build failures.
 
-The deploy job has `needs: build`, so it only runs if the build succeeds. This means a broken build never reaches the live site.
+### Step 16: The hidden files gotcha
 
-**Vibe coder tip:** The verify step (`if [ ! -f manifest.json ]; exit 1`) is a safety net. If the build silently produces nothing, the workflow fails before deploying. Always verify your build output exists before shipping it.
+This one bit us and will bite you too: **GitHub Actions `upload-artifact@v4` excludes hidden directories by default.** If your build tool outputs to a folder starting with a dot (`.vite`, `.next`, `.nuxt`, etc.), those files will silently disappear from the artifact.
 
-### Step 19: Add Supabase credentials to the server
+The fix: `include-hidden-files: true` in your artifact upload step.
 
-The config pattern from Chapter 2 reads credentials from `config.local.php` on the server. We created this file directly in cPanel File Manager at `bottlelore.com/config.local.php`:
+We deployed 5 times with green checkmarks before discovering the manifest file was being silently dropped. The build was fine, the FTP was fine — but the handoff between them was losing files. CI green doesn't always mean "working."
 
-```php
-<?php
-return [
-    'supabase_url' => 'https://your-project.supabase.co',
-    'supabase_anon_key' => 'your-anon-key-here',
-    'sentry_dsn' => 'your-sentry-dsn-here',
-];
-```
+### Step 17: Set up server-side config
 
-This file is git-ignored — it lives only on the server. The deploy's FTP sync won't delete it because it's not in the repo (and the FTP action only removes files it previously tracked).
+Create your production config file directly on the server (via cPanel, SSH, etc.). Never in the repo. The deploy tool won't delete it because it's not tracked.
 
-**Vibe coder tip:** Never put credentials in your repo, even in a "local config" file. Create it directly on the server through cPanel. If it accidentally ends up in a commit, remove it immediately and rotate the keys.
+### Step 18: Wire up the entry point for production
 
-### Step 20: Wire up index.php to load the production bundle
+Your HTML entry point needs to load the right JavaScript:
+- **Production:** Read the build manifest to find the hashed bundle filename
+- **Development fallback:** Load raw source files (for local testing without a build)
 
-The entry point `index.php` needs to know which JavaScript file to load. In development, it's just `assets/js/app.js`. In production, Vite generates a hashed filename like `app.Sw2BVqgX.min.js` — and the mapping lives in `.vite/manifest.json`.
+Also add a **visible diagnostics panel** — a collapsible section showing whether the bundle loaded, whether config is set, whether the database is reachable. On devices without developer tools, this is your only debugging lifeline.
 
-We updated `index.php` to:
-1. Read the manifest file and extract the hashed bundle filename
-2. If found, load the production bundle via a `<script type="module">` tag
-3. If not found (local dev, or manifest missing), fall back to loading the raw source with an import map that resolves `@supabase/supabase-js` from a CDN
+### What you have at the end of Chapter 5
 
-We also added a visible diagnostics panel (inside a collapsible `<details>` element) that shows whether the bundle was found, whether the manifest exists, and whether the Supabase/Sentry config is set. This is critical for iPad debugging — no DevTools means errors need to be visible on the page.
-
-**Vibe coder tip:** The dev fallback with import maps means you can test the app without running a build. But production should always use the bundle — it's smaller, faster, and has all dependencies compiled in.
-
-### Step 21: Fix hidden files in the artifact upload
-
-After deploying, the site still showed "Bundle: NOT FOUND" and "Manifest: MISSING." The deploy was succeeding (green checkmarks in GitHub Actions), files were appearing on the server — but `.vite/manifest.json` was nowhere to be found.
-
-The culprit: **`actions/upload-artifact@v4` excludes hidden directories by default.** The `.vite` folder (which starts with a dot) was silently dropped from the build artifact. The build job verified the manifest existed (same job, same filesystem), but the artifact that got passed to the deploy job didn't include it.
-
-The fix was one line:
-
-```yaml
-- name: Upload build artifacts
-  uses: actions/upload-artifact@v4
-  with:
-    name: build-output
-    path: |
-      assets/dist/
-    include-hidden-files: true   # ← this was missing
-    retention-days: 1
-```
-
-After this fix, the full build output — including `.vite/manifest.json` — reached the server. The app loaded the production bundle correctly.
-
-**Vibe coder tip:** When a deploy "succeeds" but the result is wrong, check what's actually arriving on the server. Green checkmarks in CI don't mean the right files were deployed. In our case, the build was fine, the FTP was fine — but the handoff between them (the artifact) was silently dropping files. cPanel File Manager is your friend here.
-
-### What we had at the end of Chapter 5
-
-- Deploy workflow: build → verify → artifact → FTP (two-job pipeline)
-- Supabase credentials on the server via `config.local.php`
-- `index.php` loading the production Vite bundle via manifest lookup
-- Visible diagnostics panel for iPad debugging
-- Production bundle successfully deployed and loading in the browser
+- Two-job CI pipeline: build → verify → deploy
+- Production bundle building and deploying correctly
+- Visible diagnostics for debugging on any device
 
 ### Key lessons
 
-- **CI green doesn't mean "working."** Our deploy succeeded 5 times in a row while silently shipping an incomplete build. The artifact upload was dropping hidden files. Trust but verify — check what actually landed on the server.
-- **`upload-artifact@v4` excludes dotfiles by default.** This is a breaking change from v3. If your build output includes directories like `.vite`, `.next`, `.nuxt`, etc., you must set `include-hidden-files: true`. This will bite you silently.
-- **Two-job pipelines need artifact handoffs.** The build job and deploy job run on different machines. You can't just `npm run build` and expect the files to be there for the FTP step. Artifacts bridge the gap — but only if they include everything.
-- **Visible error reporting saves hours.** The diagnostics panel in `index.php` told us exactly what was wrong: manifest missing, bundle not found. Without it, we'd have been guessing. On iPad, every error must surface in the UI.
+- **CI green doesn't mean "working."** Check what actually arrived on the server. Green checkmarks mean the steps ran, not that the right files were deployed.
+- **`upload-artifact@v4` excludes dotfiles by default.** Set `include-hidden-files: true` if your build output has dot-directories. This will bite you silently.
+- **Two-job pipelines need artifact handoffs.** Build and deploy run on different machines. Artifacts bridge the gap.
+- **Visible error reporting saves hours.** On any device without a console, errors must surface in the UI.
 
 ---
 
-## Chapter 6: The Real Schema and the Bootstrap Saga
+## Chapter 6: Permissions, Admin, and Knowing When to Simplify
 
-**Date:** March 13–14, 2026
-**Goal:** Expand the database schema from a simple prototype to the real multi-role architecture, and get the first super admin account working.
+**Goal:** Build out the permission model and admin access. Learn the most important vibe coding lesson: when to delete code.
 
-### Step 22: Expand the schema for multi-role access
+### Step 19: Design your permission model
 
-Chapter 4's schema was a starting point — three tables with simple RLS. But the real app needs a **three-tier permission model**: super admins (platform owners), winery owners, and winery staff. We also need flights (curated wine tasting sets).
+Most apps need at least two tiers: public users and admins. Many need three or more. Design this in the database, not in your app code:
 
-The expanded schema added:
+- **Public tier:** No login required. Can view public content.
+- **Admin tier:** Logged in. Can manage content for their organization.
+- **Super admin tier:** Platform owner. Can manage everything.
 
-| New table / concept | Purpose |
-|---|---|
-| `super_admins` | Platform-level admin. You. One row with your auth user ID |
-| `flights` | A named group of wines (e.g., "Summer Tasting Flight") — belongs to a winery |
-| `flight_wines` | Join table linking wines to flights, with sort order |
-| `is_super_admin()` | SQL helper function — checks if `auth.uid()` is in `super_admins` |
-| `is_winery_admin()` | SQL helper — checks if current user admins a specific winery |
-| `is_winery_owner()` | SQL helper — checks if current user is an *owner* (not just staff) |
-| `link_user_to_winery()` | Function to safely link a user to a winery with role checks |
+Use database helper functions (`is_admin()`, `is_super_admin()`) in your security policies. Mark them as `security definer` so they can read permission tables that RLS would normally block.
 
-The `wineries` table also got more profile fields: description, location, website, phone, hours, and social media links.
+### Step 20: The automation trap (our biggest lesson)
 
-### Step 23: Rewrite RLS policies for the three-tier model
+We tried to build an automated first-run setup: the first person to sign up automatically becomes the super admin. It was elegant in theory. In practice, it caused a cascade of **six bugs**, each fix revealing the next:
 
-The original 6 policies became **30+ policies**. The key pattern:
+1. **Dev mode crash** — a build-time variable didn't exist when running unbundled
+2. **Errors swallowed** — the flow didn't surface errors in the UI
+3. **Useless error messages** — "Login failed" with no detail
+4. **Missing role handling** — admin views assumed every user had an organization
+5. **Email confirmation timing** — the setup ran before email was confirmed
+6. **State deadlock** — user existed but had no admin role, couldn't proceed or retry
 
-- **Public:** Can SELECT active records (wines, wineries, flights). No auth needed — this is what makes QR scan work.
-- **Super admin:** Can do everything. Every table has SELECT/INSERT/UPDATE policies that check `is_super_admin()`.
-- **Winery owner:** Full control of *their* winery — wines, flights, staff. Can't touch other wineries.
-- **Winery staff:** Can manage wines and flights for their winery, but can't change the winery profile or add other admins.
+After fixing all six bugs, we asked the right question: **"How often does this happen?"** The answer was: once. Per deployment. Ever.
 
-The `flight_wines` join table also gets DELETE policies (unlike wines, which use soft-delete). Removing a wine from a flight is a real delete because the join row has no meaning on its own.
+We deleted 200+ lines of code and replaced it with a 6-step manual process that takes 30 seconds in the database dashboard. The admin page became a simple login form.
 
-**Vibe coder tip:** Helper functions like `is_super_admin()` are marked `security definer` — they run with elevated privileges so they can read the `super_admins` table even though RLS would normally block it. This is safe because the function only returns true/false, never exposes data.
+**Tip:** Not everything needs to be automated. If something happens once, document the manual steps and move on. Code you don't write has zero bugs.
 
-### Step 24: The bootstrap saga — and why we abandoned it
+### What you have at the end of Chapter 6
 
-The original plan was elegant: the first person to sign up automatically becomes the super admin. A database function `bootstrap_super_admin()` would insert the caller's `auth.uid()` into `super_admins`, but only if the table was empty. A companion function `is_bootstrap_needed()` let the login page check whether to show a "Create Account" form or a regular login form.
-
-**What actually happened:** A cascade of bugs, each fix revealing the next.
-
-1. **Dev mode crash.** The admin page referenced `__BUILD_SHA__` — a Vite build-time constant that doesn't exist when running unbundled. Safari/iPad crashed silently. *Fix: check if the variable is defined before using it.*
-
-2. **Bootstrap errors swallowed.** The bootstrap flow called Supabase but didn't surface errors in the UI. On iPad with no console, the signup appeared to succeed when it actually failed. *Fix: show the actual Supabase error in a toast.*
-
-3. **Login error message useless.** Failed logins showed a generic "Login failed" with no detail. *Fix: display the actual error message from Supabase (e.g., "Invalid login credentials").*
-
-4. **Wine list crash.** Super admins don't have a `winery_admins` row (they're in `super_admins` instead). The admin view assumed every logged-in user had a winery assignment and crashed when the query returned nothing. *Fix: detect super admin role and load all wines instead of filtering by winery.*
-
-5. **Email confirmation timing.** Supabase requires email confirmation by default. The bootstrap flow signed the user up, but the `bootstrap_super_admin()` call happened before the user confirmed their email — so `auth.uid()` was null. *Fix: defer bootstrap until after sign-in, checking for a pending flag.*
-
-6. **Bootstrap deadlock.** If the user existed in Supabase auth but the `super_admins` row wasn't created (because of bug #5), subsequent sign-ins would see "bootstrap not needed" (user exists) but the user had no admin role. Stuck in limbo. *Fix: check for the specific case where the user is authenticated but has no super_admin row.*
-
-7. **The final realization.** After fixing six bugs, we stepped back and asked: why is the app creating accounts at all? This is a private admin tool. The platform owner (you) has full access to the Supabase dashboard. **Just create the user directly in Supabase.**
-
-### Step 25: Remove bootstrap, do it the simple way
-
-We deleted all the bootstrap UI code from the admin view. The signup flow, the pending-bootstrap detection, the conditional form rendering — all gone. The admin page is now just a login form.
-
-**The simple setup process:**
-
-1. Run the schema SQL in Supabase SQL Editor (it includes `bootstrap_super_admin()` for reference, but you don't use it from the app)
-2. In Supabase → Authentication → Users → click "Add user"
-3. Enter your email and password, check "Auto Confirm User"
-4. Copy the new user's UUID
-5. In SQL Editor: `INSERT INTO public.super_admins (user_id) VALUES ('your-uuid-here');`
-6. Log in at `/admin` — done
-
-**Vibe coder tip:** Not everything needs to be automated. The bootstrap flow was 200+ lines of code, caused six bugs, and served a use case (first-time setup) that happens exactly once. Doing it manually in the Supabase dashboard takes 30 seconds and can't break. Sometimes the simplest solution is the best one.
-
-### Step 26: Password recovery
-
-After multiple test signups and password changes during the bootstrap debugging, the working password got lost. Recovery was straightforward:
-
-1. In Supabase → Authentication → Users, delete the old user
-2. Create a fresh user with "Add user" → new email/password → Auto Confirm
-3. Insert the new UUID into `super_admins`
-4. Log in successfully at `/admin`
-
-### What we had at the end of Chapter 6
-
-- Expanded schema: 6 tables, 30+ RLS policies, 4 helper functions, performance indexes
-- Three-tier permission model: super admin → winery owner → winery staff
-- Flights and flight-wines support for curated tasting experiences
-- Clean admin login page (no bootstrap complexity)
-- Super admin account created and working
-- Complete SQL saved in `docs/phase3-supabase-schema.sql`
+- Multi-tier permission model enforced at the database level
+- Clean admin login page
+- Working admin account
+- 200 fewer lines of code (and 6 fewer bugs)
 
 ### Key lessons
 
-- **Don't automate one-time setup.** The bootstrap flow solved a problem that occurs exactly once per deployment. A 30-second manual step in the Supabase dashboard replaced 200+ lines of buggy code. Ask yourself: "How often does this happen?" If the answer is "once," just document the manual steps.
-- **Each bug fix can reveal the next.** The bootstrap saga was six bugs deep — each fix exposed a new failure mode. When you're that deep in a rabbit hole, consider whether the feature itself is the problem, not just the implementation.
-- **iPad debugging is hard.** Half these bugs were invisible without a console. The visible diagnostics panel (from Chapter 5) and toast error messages were the only way to diagnose issues. Never skip error surfacing in the UI.
-- **Security functions need `security definer`.** Helper functions like `is_super_admin()` need elevated privileges to read protected tables. Without `security definer`, RLS blocks the helper itself, and every policy that uses it silently returns false.
-- **The schema SQL is your safety net.** Having the complete schema in `docs/phase3-supabase-schema.sql` meant we could reason about the entire permission model in one place. When we needed to delete and recreate the user, the SQL was ready.
+- **Don't automate one-time setup.** If it happens once, a 30-second manual step beats 200 lines of buggy code. Ask: "How often does this happen?"
+- **Each bug fix can reveal the next.** When you're six bugs deep in a rabbit hole, consider whether the feature itself is the problem, not just the implementation.
+- **"Delete it" is a valid fix.** The best code is code you didn't write. If a feature is causing more problems than it solves, the feature is the bug.
+- **Security functions need elevated privileges.** Database helper functions that check permissions need `security definer` to read protected tables. Without it, RLS blocks the helper itself.
 
 ---
 
-## Chapter 7: End-to-End Testing & Fixes
+## Chapter 7: Test Everything End-to-End
 
-**Date:** March 14, 2026
-**Goal:** Test every user flow end-to-end and fix what's broken. Wire in the QR code generator. Harden error handling.
+**Goal:** Test every user flow, fix what's broken, wire up remaining features, and harden error handling.
 
-### Step 27: Test the guest QR scan flow
+### Step 21: Trace every user flow
 
-We traced the full path from URL to rendered wine page: `/:winerySlug/:wineId` → router.js → bottle-page.js → supabase-gateway.js → Supabase. The flow worked but had a security gap — the winery slug in the URL was never validated against the wine's actual winery. A user could use any slug with any wine ID and still see the wine.
+Walk through every path a user can take in your app. For each flow, verify:
+- Does the data load correctly?
+- Are there any security gaps? (e.g., can a URL be spoofed to show unauthorized data?)
+- What happens on error?
+- What happens on slow connections?
 
-**Fix:** Added winery slug validation in `bottle-page.js`. After fetching the wine, we now compare `wine.wineries.slug` against the URL's `winerySlug`. A mismatch shows "Wine not found" — preventing URL spoofing.
+We found that our public page accepted any URL slug without validating it against the actual data. A user could construct a fake URL and still see the content. Fix: validate URL parameters against the fetched data.
 
-### Step 28: Fix the admin auth race condition
+### Step 22: Handle auth race conditions
 
-A critical bug: refreshing any admin page (`/admin/wines`, `/admin/wines/new`, etc.) would redirect to the login form — even when the user had a valid session. The root cause was a race condition:
+A critical class of bug in single-page apps: **auth state is async.** On page load, your auth service needs time to restore the session from storage. Any code that checks "is the user logged in?" during initialization must wait for auth to resolve first.
 
-1. `app.js` sets up `onAuthStateChange()` (async — waits for Supabase to restore the session)
-2. `app.js` calls `route()` immediately
-3. Admin views check `state.isLoggedIn()` — which is still `false` because the auth callback hasn't fired yet
-4. Admin view redirects to `/admin`
+The pattern: create a promise that resolves when the auth state is ready. All protected views await that promise before checking login status. Add a timeout so the app doesn't hang if the auth service is unreachable.
 
-**Fix:** Created an `authReadyPromise` in `app.js` that resolves when the first `onAuthStateChange` event fires. Admin views now `await authReadyPromise` before checking login state. A 3-second timeout ensures the app doesn't hang if Supabase is unreachable.
+### Step 23: Watch out for platform traps
 
-### Step 29: Fix the form.name collision
+Every platform has gotchas. Some real ones we hit:
 
-A subtle but critical bug in the wine create/edit form: `form.name.value` on line 223 of admin.js was supposed to read the wine name input, but `HTMLFormElement.name` is an inherited property that returns the form's own `name` attribute (an empty string) — NOT the `<input name="name">` element. This meant `form.name.value` was `undefined`, and `.trim()` would throw a `TypeError`, crashing every wine save attempt.
+- **`HTMLFormElement.name` shadows input fields.** If you have `<input name="name">` inside a form, `form.name` returns the form's own attribute, not the input. Use `getElementById` instead.
+- **Build-time variables crash in dev mode.** Variables like `__BUILD_VERSION__` that your bundler replaces at build time don't exist when running unbundled. Always check if they're defined.
+- **Direct URL navigation breaks SPA assumptions.** Users can bookmark or refresh any URL. Every view must handle being the entry point, not just the happy path from the previous screen.
 
-**Fix:** Replaced all `form.fieldName.value` accessors with explicit `document.getElementById('wine-name').value` calls. This is unambiguous and avoids the prototype property shadowing issue entirely.
+### Step 24: Wire up all features end-to-end
 
-**Vibe coder tip:** HTML form elements have built-in properties like `name`, `action`, `method`, and `length` that shadow identically-named input elements. If you have an `<input name="name">` inside a form, `form.name` returns the form's own attribute, not the input. Use `getElementById` or `form.elements.namedItem()` to avoid this class of bugs.
+Check that every component is actually imported and used by a view. A component that exists in the codebase but isn't connected to anything is the same as a component that doesn't exist.
 
-### Step 30: Wire the QR code generator into the admin panel
+### Step 25: Add loading states and tracking
 
-The `qr-generator.js` component existed but wasn't connected to any view. We wired it into the admin panel in two places:
+Two quick wins that dramatically improve the experience:
 
-1. **Wine list table** — Added a "QR" button next to each wine's "Edit" button. Clicking it opens a modal overlay with the generated QR code, the wine name as a title, and the full bottle URL displayed below. The modal closes by clicking "Close" or the backdrop.
+1. **Loading states on buttons** — disable and change text during async operations ("Save" → "Saving…"). Prevents double-submits and gives visible feedback.
+2. **User context in error reports** — when a user logs in, attach their identity to your error monitoring. When something breaks, you'll know who was affected.
 
-2. **Wine edit form** — When editing an existing wine, a QR code section appears below the form, showing the QR code and URL for that wine. This lets staff quickly scan or screenshot the QR code while reviewing wine details.
+### What you have at the end of Chapter 7
 
-Both use the `generateQR()` and `getBottleUrl()` functions from the existing component — no changes needed to the component itself.
-
-### Step 31: Add winery guard to the wine form
-
-Another bug: navigating directly to `/admin/wines/new` (e.g., via browser bookmark or page refresh) would crash because `state.getCurrentWinery()` was `null`. The winery is normally set by the wine list view, but direct navigation skips that step.
-
-**Fix:** The wine form now checks for a winery in state before rendering. If missing, it fetches the admin's winery (or falls back to the first winery for super admins) — the same logic used by the wine list. If no winery is found, it shows an error toast and redirects back.
-
-### Step 32: Add loading states and Sentry user tracking
-
-Two polish items:
-
-1. **Loading states on buttons** — Login and wine save buttons now disable and show "Signing in…" or "Saving…" while the async operation is in progress. On failure, they re-enable with the original text. This prevents double-submits and gives iPad users visible feedback.
-
-2. **Sentry user tracking** — `app.js` now calls `logger.setUser(user)` on login and `logger.clearUser()` on logout, so Sentry error reports include the user's ID and email. This was a gap — errors were being reported but with no user context.
-
-### Step 33: Fix redundant parsePath() call
-
-A minor bug in `app.js:33` — the admin route case was calling `parsePath()` a second time to extract `wineId`, despite it already being destructured on line 18. Fixed to use the existing `wineId` variable.
-
-### Step 34: Validate RLS policies
-
-Reviewed all 30+ RLS policies in `docs/phase3-supabase-schema.sql` against the app's data access patterns:
-
-| Flow | Policy | Status |
-|------|--------|--------|
-| Guest reads wine (public SELECT) | `is_active = true` filter, no auth | Correct |
-| Guest reads winery (public SELECT) | `is_active = true` filter, no auth | Correct |
-| Admin reads own wines | `is_winery_admin(winery_id)` check | Correct |
-| Admin creates wine | `is_winery_admin(winery_id)` check on INSERT | Correct |
-| Admin updates wine | `is_winery_admin(winery_id)` check on UPDATE | Correct |
-| Super admin full access | `is_super_admin()` on all tables | Correct |
-| Cross-winery isolation | Admin can only modify wines for their winery | Correct |
-| No DELETE policies on wines | Intentional — soft-delete via `is_active` | Correct |
-
-All RLS policies are sound. The three-tier model (public → winery admin → super admin) is correctly enforced at the database level.
-
-### Step 35: Verify error handling
-
-All error paths surface via `showToast()`:
-
-| Error scenario | Handler | Toast? |
-|---|---|---|
-| Wine not found (invalid QR) | bottle-page.js catch block | Yes |
-| Login failed | admin.js login catch | Yes |
-| Wine save failed | admin.js form submit catch | Yes |
-| Wine list load failed | admin.js renderWineList catch | Yes |
-| QR generation failed | qr-generator.js catch | Yes |
-| Route render failed | app.js route() catch | Yes |
-| Unhandled promise rejection | utils.js global handler | Logged (Sentry) |
-| Global JS error | utils.js global handler | Logged (Sentry) |
-
-No `console.*` calls exist outside of `logger.js`. All user-facing errors use `showToast()`.
-
-### What was fixed in Phase 7
-
-| Bug | Severity | Fix |
-|-----|----------|-----|
-| `form.name.value` crashes wine save | Critical | Use `getElementById` for all form field access |
-| Admin pages redirect on refresh | Critical | `authReadyPromise` waits for session restore |
-| Direct nav to wine form crashes (no winery) | High | Fetch winery if not in state |
-| QR generator not integrated | High | Added to wine list (modal) and edit form |
-| Winery slug not validated in bottle page | Medium | Compare URL slug to wine's winery slug |
-| Redundant `parsePath()` call | Low | Use already-destructured variable |
-| No Sentry user context | Low | Call `logger.setUser()`/`clearUser()` on auth |
-| No loading states on buttons | Low | Disable + text change during async ops |
+- Every user flow tested and verified
+- Auth race conditions handled
+- Platform-specific bugs fixed
+- All features wired end-to-end
+- Loading states and error tracking in place
+- **A working app.**
 
 ### Key lessons
 
-- **`HTMLFormElement.name` is a trap.** It's one of several built-in form properties (`name`, `action`, `method`, `length`) that shadow identically-named input elements. Always use `getElementById` or `form.elements.namedItem()` for disambiguation.
-- **Auth state is async.** On page load, Supabase needs time to restore the session from storage. Any code that checks "is the user logged in?" during initialization must wait for the auth state to resolve first. A promise-based gate pattern handles this cleanly.
-- **Wire features end-to-end, not just write them.** The QR generator component was complete but never imported by any view. A component that exists but isn't used is the same as a component that doesn't exist.
-- **Direct navigation breaks assumptions.** SPAs often set state incrementally as users navigate through screens. But users can bookmark or refresh any URL. Every view must handle being the entry point — not just the happy path from the previous screen.
+- **Auth state is async.** On page load, the session needs time to restore. Use a promise-based gate pattern.
+- **Wire features end-to-end.** A component that isn't imported anywhere doesn't exist.
+- **Direct navigation breaks assumptions.** Every view must handle being the entry point.
+- **`form.name` is a trap.** HTML form elements have built-in properties that shadow identically-named inputs.
+
+---
+
+## The Meta-Lessons: What Vibe Coding Actually Taught Us
+
+After building an entire app this way, here are the big takeaways:
+
+### 1. The instruction file is everything
+
+Your `CLAUDE.md` (or equivalent) is the most important file in the repo. It's your AI's memory, your project's constitution, and your onboarding doc all in one. Keep it updated. Put hard rules there. The AI reads it every session.
+
+### 2. Infrastructure before features
+
+Get your deployment pipeline, error monitoring, and database working before you write any application code. It feels slow at first, but it means every feature you build afterward is immediately testable on a real URL with real error reporting.
+
+### 3. One file, one job
+
+The gateway pattern (one file for all database access), the logger pattern (one file for all logging), the state pattern (one file for all state management) — these aren't about being fancy. They're about being able to find things. When something breaks at 11 PM, you want to know exactly which file to open.
+
+### 4. Escape everything, surface everything
+
+Two rules that prevent 90% of headaches:
+- **Escape all user content** before putting it in HTML (prevents XSS)
+- **Surface all errors in the UI** (prevents silent failures, especially on mobile/tablet)
+
+### 5. Delete code fearlessly
+
+The bootstrap saga taught us: if a feature is causing more problems than it solves, the feature is the bug. We deleted 200 lines and replaced them with a 30-second manual process. The app got simpler, more reliable, and easier to understand.
+
+### 6. "How often does this happen?"
+
+Before automating anything, ask this question. If the answer is "once" or "rarely," document the manual steps and move on. Code you don't write has zero bugs, needs zero maintenance, and confuses zero future readers.
+
+### 7. CI green ≠ working
+
+Green checkmarks mean the steps ran. They don't mean the right files were deployed, the right config was loaded, or the app actually works. Always verify the end result — load the URL, check the server, look at what actually arrived.
+
+### 8. The AI is a partner, not a magic wand
+
+You still need to:
+- **Describe what you want clearly** — the AI can't read your mind
+- **Review what it produces** — look for security issues, missing error handling, hardcoded values
+- **Make judgment calls** — when to automate vs. keep manual, when to delete vs. fix
+- **Test the result** — load the page, click the buttons, try the edge cases
+
+The AI writes the code. You make the decisions. That's the partnership.
+
+---
+
+## Quick-Start Checklist
+
+For anyone starting a new vibe-coded project, here's the order:
+
+- [ ] Write a detailed description of what you want to build
+- [ ] Create a `CLAUDE.md` with your hard rules and tech stack
+- [ ] Get a domain pointed at hosting
+- [ ] Set up automated deployment (GitHub Actions + your hosting)
+- [ ] Deploy a "Hello World" page to verify the pipeline
+- [ ] Set up error monitoring (Sentry or equivalent)
+- [ ] Set up config management (server-side injection, no hardcoded keys)
+- [ ] Create project scaffolding (build tools, linter, directory structure)
+- [ ] Build core modules in dependency order
+- [ ] Build views and components
+- [ ] Set up your database (tables, security rules, test data)
+- [ ] Add a build step to your deploy workflow
+- [ ] Test every user flow end-to-end
+- [ ] Fix the bugs you find (there will be bugs)
+- [ ] Ship it
+
+---
+
+*Built with Claude Code. Every lesson here came from a real session, a real bug, or a real "aha" moment. Your project will have its own bugs and its own moments — but the process works.*
