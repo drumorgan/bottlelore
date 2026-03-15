@@ -109,13 +109,43 @@ describe('parsePath', () => {
     });
   });
 
+  describe('public winery page', () => {
+    it('parses /:winerySlug as winery-page', () => {
+      expect(parsePath('/sunset-vineyard')).toEqual({
+        view: 'winery-page',
+        winerySlug: 'sunset-vineyard',
+      });
+    });
+
+    it('handles trailing slash', () => {
+      expect(parsePath('/sunset-vineyard/')).toEqual({
+        view: 'winery-page',
+        winerySlug: 'sunset-vineyard',
+      });
+    });
+  });
+
+  describe('public flight page', () => {
+    it('parses /:winerySlug/flight/:flightId', () => {
+      expect(parsePath('/sunset-vineyard/flight/fl-123')).toEqual({
+        view: 'flight-page',
+        winerySlug: 'sunset-vineyard',
+        flightId: 'fl-123',
+      });
+    });
+
+    it('handles trailing slash', () => {
+      expect(parsePath('/sunset-vineyard/flight/fl-123/')).toEqual({
+        view: 'flight-page',
+        winerySlug: 'sunset-vineyard',
+        flightId: 'fl-123',
+      });
+    });
+  });
+
   describe('not found', () => {
     it('returns not-found for unknown admin route', () => {
       expect(parsePath('/admin/unknown')).toEqual({ view: 'not-found' });
-    });
-
-    it('returns not-found for single unknown segment', () => {
-      expect(parsePath('/something')).toEqual({ view: 'not-found' });
     });
 
     it('returns not-found for deeply nested unknown route', () => {

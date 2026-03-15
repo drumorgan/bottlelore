@@ -2,8 +2,9 @@ import * as logger from './logger.js';
 import { registerGlobalErrorHandlers, showToast } from './utils.js';
 import { parsePath } from './router.js';
 import { onAuthStateChange } from './supabase-gateway.js';
-import { setCurrentUser, resetAllState, isLoggedIn, setUserRole, setSuperAdmin } from './state.js';
-import { checkIsSuperAdmin, getUserRole } from './supabase-gateway.js';
+import { setCurrentUser, resetAllState, isLoggedIn, setUserRole, setSuperAdmin, setUserWineryAssignments } from './state.js';
+import { checkIsSuperAdmin, getAdminWineries } from './supabase-gateway.js';
+import { init as initTheme } from './theme.js';
 
 // Build info is injected by Vite at compile time — use try/catch for dev/unbundled mode
 // (Safari/iPad throws ReferenceError on bare globals even with typeof guard)
@@ -14,6 +15,7 @@ try { buildTime = __BUILD_TIME__; } catch { /* unbundled */ } // eslint-disable-
 logger.info('BottleLore starting', { build: buildSha, time: buildTime });
 
 registerGlobalErrorHandlers();
+initTheme();
 
 // Resolved once the first auth state event fires (session restored or no session)
 let authReady;
@@ -35,6 +37,16 @@ async function route() {
       case 'bottle-page': {
         const { render } = await import('./views/bottle-page.js');
         await render(app, routeInfo.winerySlug, routeInfo.wineId);
+        break;
+      }
+      case 'flight-page': {
+        const { render } = await import('./views/flight-page.js');
+        await render(app, routeInfo.winerySlug, routeInfo.flightId);
+        break;
+      }
+      case 'winery-page': {
+        const { render } = await import('./views/winery-page.js');
+        await render(app, routeInfo.winerySlug);
         break;
       }
       case 'admin-login': {
@@ -98,8 +110,13 @@ async function detectRole(userId) {
     if (isSA) {
       setUserRole('super_admin');
     } else {
-      const roleData = await getUserRole(userId);
-      setUserRole(roleData ? roleData.role : 'staff');
+      const assignments = await getAdminWineries(userId);
+      setUserWineryAssignments(assignments);
+      if (assignments.length > 0) {
+        setUserRole(assignments[0].role);
+      } else {
+        setUserRole('staff');
+      }
     }
   } catch (err) {
     logger.error('Role detection failed on auth restore', err);

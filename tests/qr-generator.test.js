@@ -12,7 +12,7 @@ vi.mock('../assets/js/logger.js', () => ({
   error: vi.fn(),
 }));
 
-import { generateQR, getBottleUrl, downloadQR, printQR } from '../assets/js/components/qr-generator.js';
+import { generateQR, getBottleUrl, getFlightUrl, getWineryUrl, downloadQR, printQR } from '../assets/js/components/qr-generator.js';
 import QRCode from 'qrcode';
 
 describe('qr-generator', () => {
@@ -28,6 +28,24 @@ describe('qr-generator', () => {
     it('handles special characters in slug', () => {
       const url = getBottleUrl('my-winery', 'abc-def-456');
       expect(url).toContain('my-winery/abc-def-456');
+    });
+  });
+
+  // ── getFlightUrl ────────────────────────────────────────────────────
+
+  describe('getFlightUrl', () => {
+    it('builds correct URL from slug and flightId', () => {
+      const url = getFlightUrl('sunset-vineyard', 'flight-123');
+      expect(url).toBe(`${window.location.origin}/sunset-vineyard/flight/flight-123`);
+    });
+  });
+
+  // ── getWineryUrl ────────────────────────────────────────────────────
+
+  describe('getWineryUrl', () => {
+    it('builds correct URL from slug', () => {
+      const url = getWineryUrl('sunset-vineyard');
+      expect(url).toBe(`${window.location.origin}/sunset-vineyard`);
     });
   });
 

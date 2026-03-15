@@ -44,9 +44,11 @@ export function renderLogin(container) {
         state.setUserRole('super_admin');
         navigate('/admin/wineries');
       } else {
-        const roleData = await gateway.getUserRole(userId);
-        if (roleData) {
-          state.setUserRole(roleData.role);
+        const assignments = await gateway.getAdminWineries(userId);
+        state.setUserWineryAssignments(assignments);
+        if (assignments.length > 0) {
+          state.setUserRole(assignments[0].role);
+          state.setCurrentWinery(assignments[0].wineries);
         } else {
           state.setUserRole('staff');
         }

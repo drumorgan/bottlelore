@@ -52,24 +52,31 @@ export function renderAdminNav(container) {
     return `<a href="${item.path}" class="admin-nav__link${active}" data-nav-path="${item.path}">${escapeHtml(item.label)}</a>`;
   }).join('');
 
-  // Super admin winery switcher — shows current winery context with dropdown
+  // Winery switcher — for super admins or users linked to multiple wineries
   let wineryContext = '';
-  if (isSuperAdmin) {
-    const wineryList = state.getAdminWineryList();
-    if (wineryList.length > 0 && winery) {
-      const options = wineryList.map(w =>
+  const userAssignments = state.getUserWineryAssignments();
+  const showSwitcher = isSuperAdmin
+    ? state.getAdminWineryList().length > 1
+    : userAssignments.length > 1;
+
+  if (showSwitcher && winery) {
+    let options;
+    if (isSuperAdmin) {
+      options = state.getAdminWineryList().map(w =>
         `<option value="${escapeHtml(w.id)}" ${w.id === winery.id ? 'selected' : ''}>${escapeHtml(w.name)}</option>`
       ).join('');
-      wineryContext = `
-        <div class="admin-nav__switcher">
-          <select id="winery-switcher" class="admin-nav__switcher-select" title="Switch winery context">
-            ${options}
-          </select>
-        </div>
-      `;
-    } else if (winery) {
-      wineryContext = `<span class="admin-nav__winery">${escapeHtml(winery.name)}</span>`;
+    } else {
+      options = userAssignments.map(a =>
+        `<option value="${escapeHtml(a.wineries.id)}" ${a.wineries.id === winery.id ? 'selected' : ''}>${escapeHtml(a.wineries.name)} (${a.role})</option>`
+      ).join('');
     }
+    wineryContext = `
+      <div class="admin-nav__switcher">
+        <select id="winery-switcher" class="admin-nav__switcher-select" title="Switch winery context">
+          ${options}
+        </select>
+      </div>
+    `;
   } else if (winery) {
     wineryContext = `<span class="admin-nav__winery">${escapeHtml(winery.name)}</span>`;
   }
@@ -97,18 +104,14 @@ export function renderAdminNav(container) {
     });
   });
 
-  // Winery switcher for super admins
+  // Winery switcher (super admins and multi-winery users)
   const switcher = document.getElementById('winery-switcher');
   if (switcher) {
     switcher.addEventListener('change', () => {
-      const wineryList = state.getAdminWineryList();
-      const selected = wineryList.find(w => w.id === switcher.value);
-      if (selected) {
-        state.setCurrentWinery(selected);
-        // Re-render current view with new winery context
-        const path = window.location.pathname;
-        navigate(path);
-      }
+      state.switchToWinery(switcher.value);
+      // Re-render current view with new winery context (and updated role/nav)
+      const path = window.location.pathname;
+      navigate(path);
     });
   }
 

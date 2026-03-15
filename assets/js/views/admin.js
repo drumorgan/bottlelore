@@ -75,7 +75,8 @@ export async function render(container, view, options = {}) {
 
 /**
  * Ensure winery is loaded in state (handles direct-navigation cases).
- * For super admins, also loads the full winery list for the nav switcher.
+ * For super admins, loads the full winery list for the nav switcher.
+ * For multi-winery users, loads their assignments and shows a switcher.
  */
 async function ensureWineryLoaded() {
   try {
@@ -92,17 +93,19 @@ async function ensureWineryLoaded() {
     if (state.getCurrentWinery()) return;
 
     const user = state.getCurrentUser();
-    let winery = null;
     try {
-      const adminData = await gateway.getAdminWinery(user.id);
-      winery = adminData.wineries;
+      const assignments = await gateway.getAdminWineries(user.id);
+      if (assignments.length > 0) {
+        state.setUserWineryAssignments(assignments);
+        state.setCurrentWinery(assignments[0].wineries);
+        state.setUserRole(assignments[0].role);
+      }
     } catch (_) {
       if (state.isSuperAdmin()) {
         const allWineries = await gateway.getAllWineries();
-        if (allWineries.length > 0) winery = allWineries[0];
+        if (allWineries.length > 0) state.setCurrentWinery(allWineries[0]);
       }
     }
-    if (winery) state.setCurrentWinery(winery);
   } catch (err) {
     logger.error('Failed to load winery context', err);
   }

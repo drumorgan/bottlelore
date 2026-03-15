@@ -8,6 +8,7 @@ let _flights = [];
 let _flightById = {};
 let _staff = [];
 let _adminWineryList = [];
+let _userWineryAssignments = []; // [{ role, wineries: {...} }] for multi-winery users
 
 // ── User ──────────────────────────────────────────────────────────────────────
 
@@ -29,6 +30,28 @@ export function getUserRole() { return _userRole; }
 
 export function setCurrentWinery(w) { _currentWinery = w; }
 export function getCurrentWinery() { return _currentWinery; }
+
+// ── User Winery Assignments (multi-winery users) ────────────────────────────
+
+export function setUserWineryAssignments(assignments) { _userWineryAssignments = assignments; }
+export function getUserWineryAssignments() { return _userWineryAssignments; }
+
+/**
+ * Switch to a winery by ID. Updates currentWinery and userRole based on the
+ * user's assignment. Works for both multi-winery users and super admins.
+ */
+export function switchToWinery(wineryId) {
+  if (_isSuperAdmin) {
+    const w = _adminWineryList.find(w => w.id === wineryId);
+    if (w) _currentWinery = w;
+    return;
+  }
+  const assignment = _userWineryAssignments.find(a => a.wineries.id === wineryId);
+  if (assignment) {
+    _currentWinery = assignment.wineries;
+    _userRole = assignment.role;
+  }
+}
 
 // ── Wines ─────────────────────────────────────────────────────────────────────
 
@@ -73,4 +96,5 @@ export function resetAllState() {
   _flightById = {};
   _staff = [];
   _adminWineryList = [];
+  _userWineryAssignments = [];
 }

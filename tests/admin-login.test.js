@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 vi.mock('../assets/js/supabase-gateway.js', () => ({
   signIn: vi.fn(),
   checkIsSuperAdmin: vi.fn(),
-  getUserRole: vi.fn(),
+  getAdminWineries: vi.fn(),
 }));
 
 vi.mock('../assets/js/router.js', () => ({
@@ -64,7 +64,9 @@ describe('admin-login', () => {
   it('navigates owner to /admin/wines on login', async () => {
     gateway.signIn.mockResolvedValue({ user: { id: 'u2' } });
     gateway.checkIsSuperAdmin.mockResolvedValue(false);
-    gateway.getUserRole.mockResolvedValue({ role: 'owner', winery_id: 'w1' });
+    gateway.getAdminWineries.mockResolvedValue([
+      { role: 'owner', winery_id: 'w1', wineries: { id: 'w1', name: 'Test Winery', slug: 'test' } },
+    ]);
 
     renderLogin(container);
 
@@ -79,10 +81,10 @@ describe('admin-login', () => {
     expect(state.getUserRole()).toBe('owner');
   });
 
-  it('defaults to staff role when getUserRole returns null', async () => {
+  it('defaults to staff role when getAdminWineries returns empty', async () => {
     gateway.signIn.mockResolvedValue({ user: { id: 'u3' } });
     gateway.checkIsSuperAdmin.mockResolvedValue(false);
-    gateway.getUserRole.mockResolvedValue(null);
+    gateway.getAdminWineries.mockResolvedValue([]);
 
     renderLogin(container);
 

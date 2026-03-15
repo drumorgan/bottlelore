@@ -24,6 +24,14 @@ export function getBottleUrl(winerySlug, wineId) {
   return `${window.location.origin}/${winerySlug}/${wineId}`;
 }
 
+export function getFlightUrl(winerySlug, flightId) {
+  return `${window.location.origin}/${winerySlug}/flight/${flightId}`;
+}
+
+export function getWineryUrl(winerySlug) {
+  return `${window.location.origin}/${winerySlug}`;
+}
+
 /**
  * Download the QR canvas as a PNG file.
  * @param {HTMLCanvasElement} canvas

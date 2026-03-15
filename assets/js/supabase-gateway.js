@@ -118,7 +118,7 @@ export async function toggleWineryActive(id, isActive) {
 export async function getWineById(id) {
   const { data, error } = await getClient()
     .from(TABLES.WINES)
-    .select('*, wineries(name, slug)')
+    .select('*, wineries(name, slug, theme_preference)')
     .eq('id', id)
     .eq('is_active', true)
     .single();
@@ -162,6 +162,47 @@ export async function toggleWineActive(id, isActive) {
 }
 
 // ── Flights ──────────────────────────────────────────────────────────────────
+
+/**
+ * Public fetch: active flight with its active wines and winery info.
+ */
+export async function getPublicFlightById(id) {
+  const { data, error } = await getClient()
+    .from(TABLES.FLIGHTS)
+    .select('*, wineries(name, slug, theme_preference), flight_wines(sort_order, wines(id, name, varietal, vintage_year, price, description, tasting_notes, food_pairings, image_url, is_active))')
+    .eq('id', id)
+    .eq('is_active', true)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Public fetch: active wines for a winery, plus active flights.
+ */
+export async function getPublicWineryData(slug) {
+  const winery = await getWineryBySlug(slug);
+
+  const [{ data: wines, error: wErr }, { data: flights, error: fErr }] = await Promise.all([
+    getClient()
+      .from(TABLES.WINES)
+      .select('id, name, varietal, vintage_year, price, image_url')
+      .eq('winery_id', winery.id)
+      .eq('is_active', true)
+      .order('name'),
+    getClient()
+      .from(TABLES.FLIGHTS)
+      .select('id, name, description, flight_wines(wine_id)')
+      .eq('winery_id', winery.id)
+      .eq('is_active', true)
+      .order('sort_order'),
+  ]);
+
+  if (wErr) throw wErr;
+  if (fErr) throw fErr;
+
+  return { winery, wines, flights };
+}
 
 export async function getFlightsByWinery(wineryId) {
   const { data, error } = await getClient()
@@ -234,27 +275,25 @@ export async function setFlightWines(flightId, wineIds) {
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
-export async function getAdminWinery(userId) {
+export async function getAdminWineries(userId) {
   const { data, error } = await getClient()
     .from(TABLES.WINERY_ADMINS)
     .select('*, wineries(*)')
-    .eq('user_id', userId)
-    .single();
+    .eq('user_id', userId);
   if (error) throw error;
-  return data;
+  return data || [];
 }
 
 /**
- * Returns { role, winery_id } for the given user, or null if no row exists.
+ * Returns array of { role, winery_id } for the given user.
  */
-export async function getUserRole(userId) {
+export async function getUserRoles(userId) {
   const { data, error } = await getClient()
     .from(TABLES.WINERY_ADMINS)
     .select('role, winery_id')
-    .eq('user_id', userId)
-    .maybeSingle();
+    .eq('user_id', userId);
   if (error) throw error;
-  return data;
+  return data || [];
 }
 
 /**
@@ -293,6 +332,19 @@ export async function inviteUser(email, wineryId, role) {
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
   return data;
+}
+
+/**
+ * Update a winery admin's role (e.g. promote staff → owner).
+ * @param {string} adminId — winery_admins row ID
+ * @param {string} newRole — 'owner' or 'staff'
+ */
+export async function updateWineryAdminRole(adminId, newRole) {
+  const { error } = await getClient()
+    .from(TABLES.WINERY_ADMINS)
+    .update({ role: newRole })
+    .eq('id', adminId);
+  if (error) throw error;
 }
 
 /**
