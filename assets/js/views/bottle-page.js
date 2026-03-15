@@ -1,29 +1,8 @@
 import * as logger from '../logger.js';
-import { escapeHtml, showToast } from '../utils.js';
+import { escapeHtml, showToast, MAX_RETRIES, RETRY_DELAY_MS, isNetworkError, delay } from '../utils.js';
 import { getWineById } from '../supabase-gateway.js';
 import { navigate } from '../router.js';
 import { applyTheme } from '../theme.js';
-
-const MAX_RETRIES = 2;
-const RETRY_DELAY_MS = 1500;
-
-/**
- * Distinguish network/connectivity errors from "real" 404-style errors.
- * Supabase returns a PostgrestError with a code for DB-level issues (e.g. PGRST116
- * for .single() returning no rows). A missing code usually means fetch itself failed.
- */
-function isNetworkError(err) {
-  if (err?.code === 'PGRST116') return false; // row not found — not a network issue
-  if (err?.message?.includes('Failed to fetch')) return true;
-  if (err?.message?.includes('NetworkError')) return true;
-  if (err?.message?.includes('Load failed')) return true; // Safari
-  if (err?.name === 'TypeError' && !err?.code) return true; // fetch() throws TypeError on network failure
-  return false;
-}
-
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 export async function render(container, winerySlug, wineId) {
   logger.breadcrumb('render bottle-page', 'view', { winerySlug, wineId });

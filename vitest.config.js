@@ -10,6 +10,12 @@ export default defineConfig({
       reportsDirectory: 'coverage',
       include: ['assets/js/**/*.js'],
       exclude: ['node_modules/', 'assets/dist/'],
+      thresholds: {
+        statements: 40,
+        branches: 80,
+        functions: 70,
+        lines: 40,
+      },
     },
   },
 });
