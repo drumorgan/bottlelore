@@ -63,23 +63,35 @@ export async function render(container, winerySlug) {
   const flightCards = flights.map(f => {
     const wineCount = f.flight_wines?.length || 0;
     return `
-      <a class="winery-page__flight-card" href="/${escapeHtml(winery.slug)}/flight/${escapeHtml(f.id)}" data-nav>
-        <h3>${escapeHtml(f.name)}</h3>
-        ${f.description ? `<p>${escapeHtml(f.description)}</p>` : ''}
-        <span class="winery-page__flight-count">${wineCount} wine${wineCount !== 1 ? 's' : ''}</span>
+      <a class="card card--flight" href="/${escapeHtml(winery.slug)}/flight/${escapeHtml(f.id)}" data-nav>
+        <h3 class="card__title">${escapeHtml(f.name)}</h3>
+        ${f.description ? `<p class="card__desc">${escapeHtml(f.description)}</p>` : ''}
+        <span class="card__meta">${wineCount} wine${wineCount !== 1 ? 's' : ''}</span>
+        <span class="card__arrow">&rarr;</span>
       </a>
     `;
   }).join('');
 
   const wineCards = wines.map(w => `
-    <a class="winery-page__wine-card" href="/${escapeHtml(winery.slug)}/${escapeHtml(w.id)}" data-nav>
-      ${w.image_url ? `<img class="winery-page__wine-image" src="${escapeHtml(w.image_url)}" alt="${escapeHtml(w.name)}" />` : ''}
-      <h3>${escapeHtml(w.name)}</h3>
-      ${w.varietal ? `<p class="winery-page__wine-varietal">${escapeHtml(w.varietal)}</p>` : ''}
-      ${w.vintage_year ? `<span class="winery-page__wine-vintage">${escapeHtml(String(w.vintage_year))}</span>` : ''}
-      ${w.price ? `<p class="winery-page__wine-price">${escapeHtml(w.price)}</p>` : ''}
+    <a class="card card--wine" href="/${escapeHtml(winery.slug)}/${escapeHtml(w.id)}" data-nav>
+      ${w.image_url ? `<img class="card__image" src="${escapeHtml(w.image_url)}" alt="${escapeHtml(w.name)}" />` : ''}
+      <div class="card__body">
+        <h3 class="card__title">${escapeHtml(w.name)}</h3>
+        ${w.varietal ? `<p class="card__varietal">${escapeHtml(w.varietal)}</p>` : ''}
+        <div class="card__row">
+          ${w.vintage_year ? `<span class="card__vintage">${escapeHtml(String(w.vintage_year))}</span>` : ''}
+          ${w.price ? `<span class="card__price">${escapeHtml(w.price)}</span>` : ''}
+        </div>
+      </div>
+      <span class="card__arrow">&rarr;</span>
     </a>
   `).join('');
+
+  // Build details items
+  const details = [];
+  if (winery.hours) details.push(`<div class="winery-detail"><span class="winery-detail__label">Hours</span><span class="winery-detail__value">${escapeHtml(winery.hours)}</span></div>`);
+  if (winery.phone) details.push(`<div class="winery-detail"><span class="winery-detail__label">Phone</span><span class="winery-detail__value">${escapeHtml(winery.phone)}</span></div>`);
+  if (winery.website_url) details.push(`<div class="winery-detail"><span class="winery-detail__label">Website</span><a class="winery-detail__value winery-detail__link" href="${escapeHtml(winery.website_url)}" target="_blank" rel="noopener">${escapeHtml(winery.website_url.replace(/^https?:\/\//, ''))}</a></div>`);
 
   container.innerHTML = `
     <article class="winery-page">
@@ -89,29 +101,38 @@ export async function render(container, winerySlug) {
         ${winery.location ? `<p class="winery-page__location">${escapeHtml(winery.location)}</p>` : ''}
       </header>
 
-      ${winery.description ? `
-      <section class="winery-page__section">
-        <h2>About</h2>
-        <p>${escapeHtml(winery.description)}</p>
-      </section>` : ''}
+      <div class="ornament">&#10022;</div>
+      <div class="ornament-rule">
+        <div class="ornament-line"></div>
+        <div class="ornament-diamond"></div>
+        <div class="ornament-line"></div>
+      </div>
 
-      <section class="winery-page__details">
-        ${winery.hours ? `<p><strong>Hours:</strong> ${escapeHtml(winery.hours)}</p>` : ''}
-        ${winery.phone ? `<p><strong>Phone:</strong> ${escapeHtml(winery.phone)}</p>` : ''}
-        ${winery.website_url ? `<p><a href="${escapeHtml(winery.website_url)}" target="_blank" rel="noopener">Visit Website</a></p>` : ''}
-      </section>
+      ${winery.description ? `<p class="description">${escapeHtml(winery.description)}</p>` : ''}
+
+      ${details.length > 0 ? `
+      <div class="section">
+        <div class="section-label">Details</div>
+        <div class="winery-details">${details.join('')}</div>
+      </div>` : ''}
 
       ${flights.length > 0 ? `
-      <section class="winery-page__section">
-        <h2>Tasting Flights</h2>
-        <div class="winery-page__flights">${flightCards}</div>
-      </section>` : ''}
+      <div class="section">
+        <div class="section-label">Tasting Flights</div>
+        <div class="card-grid">${flightCards}</div>
+      </div>` : ''}
 
       ${wines.length > 0 ? `
-      <section class="winery-page__section">
-        <h2>Our Wines</h2>
-        <div class="winery-page__wines">${wineCards}</div>
-      </section>` : ''}
+      <div class="section">
+        <div class="section-label">Our Wines</div>
+        <div class="card-grid">${wineCards}</div>
+      </div>` : ''}
+
+      <div class="bottlelore-brand">
+        <div class="brand-rule"></div>
+        <div class="brand-name">BottleLore</div>
+        <div class="brand-tagline">Every bottle has a story</div>
+      </div>
     </article>
   `;
 
