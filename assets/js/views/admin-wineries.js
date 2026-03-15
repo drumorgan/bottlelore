@@ -4,6 +4,7 @@ import { navigate } from '../router.js';
 import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
 import { createImageUpload } from '../components/image-upload.js';
+import { generateQR, getWineryUrl, downloadQR, printQR } from '../components/qr-generator.js';
 
 export async function renderWineryList(container) {
   container.innerHTML = '<div class="loading">Loading wineries...</div>';
@@ -30,6 +31,19 @@ export async function renderWineryList(container) {
         </thead>
         <tbody id="winery-tbody"></tbody>
       </table>
+      <div id="qr-modal" class="qr-modal" hidden>
+        <div class="qr-modal__backdrop"></div>
+        <div class="qr-modal__content">
+          <h2 id="qr-modal-title">QR Code</h2>
+          <div id="qr-modal-canvas"></div>
+          <p id="qr-modal-url" class="qr-modal__url"></p>
+          <div class="qr-modal__actions">
+            <button id="qr-modal-download" class="btn btn--small btn--primary">Download PNG</button>
+            <button id="qr-modal-print" class="btn btn--small btn--outline">Print</button>
+          </div>
+          <button id="qr-modal-close" class="btn btn--secondary">Close</button>
+        </div>
+      </div>
     `;
 
     const tbody = document.getElementById('winery-tbody');
@@ -51,6 +65,7 @@ export async function renderWineryList(container) {
             <button class="btn btn--small btn--outline" data-toggle="${escapeHtml(w.id)}" data-active="${w.is_active}">
               ${w.is_active ? 'Deactivate' : 'Activate'}
             </button>
+            <button class="btn btn--small btn--outline" data-qr="${escapeHtml(w.slug)}">QR</button>
             <button class="btn btn--small btn--primary" data-manage="${escapeHtml(w.id)}">Manage</button>
           </td>
         </tr>
@@ -89,9 +104,40 @@ export async function renderWineryList(container) {
           navigate('/admin/wines');
         });
       });
+
+      // QR code buttons
+      tbody.querySelectorAll('[data-qr]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const slug = btn.dataset.qr;
+          const url = getWineryUrl(slug);
+          const winery = list.find(w => w.slug === slug);
+          qrModalWineryName = winery ? winery.name : 'QR Code';
+
+          document.getElementById('qr-modal-title').textContent = qrModalWineryName;
+          document.getElementById('qr-modal-url').textContent = url;
+          document.getElementById('qr-modal-canvas').innerHTML = '';
+
+          qrModal.hidden = false;
+          await generateQR(document.getElementById('qr-modal-canvas'), url);
+        });
+      });
     }
 
+    const qrModal = document.getElementById('qr-modal');
+    let qrModalWineryName = '';
+
     renderRows(wineries);
+
+    document.getElementById('qr-modal-download').addEventListener('click', () => {
+      const canvas = document.querySelector('#qr-modal-canvas canvas');
+      if (canvas) downloadQR(canvas, qrModalWineryName);
+    });
+    document.getElementById('qr-modal-print').addEventListener('click', () => {
+      const canvas = document.querySelector('#qr-modal-canvas canvas');
+      if (canvas) printQR(canvas, qrModalWineryName);
+    });
+    document.getElementById('qr-modal-close').addEventListener('click', () => { qrModal.hidden = true; });
+    document.querySelector('.qr-modal__backdrop').addEventListener('click', () => { qrModal.hidden = true; });
 
     // Client-side search
     searchInput.addEventListener('input', () => {
@@ -194,6 +240,16 @@ export async function renderWineryForm(container, wineryId) {
         <button type="submit" class="btn btn--primary">${isEdit ? 'Save Changes' : 'Create Winery'}</button>
         <button type="button" id="cancel-btn" class="btn btn--secondary">Cancel</button>
       </form>
+      ${isEdit ? `
+      <section class="admin-winery-form__qr">
+        <h2>QR Code</h2>
+        <div id="winery-qr-container"></div>
+        <p id="winery-qr-url" class="qr-modal__url"></p>
+        <div class="qr-modal__actions">
+          <button type="button" id="winery-qr-download" class="btn btn--small btn--primary">Download PNG</button>
+          <button type="button" id="winery-qr-print" class="btn btn--small btn--outline">Print</button>
+        </div>
+      </section>` : ''}
     </div>
   `;
 
@@ -206,6 +262,22 @@ export async function renderWineryForm(container, wineryId) {
   });
 
   document.getElementById('cancel-btn').addEventListener('click', () => navigate('/admin/wineries'));
+
+  // Render QR code for existing wineries
+  if (isEdit) {
+    const url = getWineryUrl(winery.slug);
+    document.getElementById('winery-qr-url').textContent = url;
+    generateQR(document.getElementById('winery-qr-container'), url);
+
+    document.getElementById('winery-qr-download').addEventListener('click', () => {
+      const canvas = document.querySelector('#winery-qr-container canvas');
+      if (canvas) downloadQR(canvas, winery.name);
+    });
+    document.getElementById('winery-qr-print').addEventListener('click', () => {
+      const canvas = document.querySelector('#winery-qr-container canvas');
+      if (canvas) printQR(canvas, winery.name);
+    });
+  }
 
   // Auto-generate slug from name for new wineries
   if (!isEdit) {

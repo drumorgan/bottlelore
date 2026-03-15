@@ -163,6 +163,47 @@ export async function toggleWineActive(id, isActive) {
 
 // ── Flights ──────────────────────────────────────────────────────────────────
 
+/**
+ * Public fetch: active flight with its active wines and winery info.
+ */
+export async function getPublicFlightById(id) {
+  const { data, error } = await getClient()
+    .from(TABLES.FLIGHTS)
+    .select('*, wineries(name, slug), flight_wines(sort_order, wines(id, name, varietal, vintage_year, price, description, tasting_notes, food_pairings, image_url, is_active))')
+    .eq('id', id)
+    .eq('is_active', true)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Public fetch: active wines for a winery, plus active flights.
+ */
+export async function getPublicWineryData(slug) {
+  const winery = await getWineryBySlug(slug);
+
+  const [{ data: wines, error: wErr }, { data: flights, error: fErr }] = await Promise.all([
+    getClient()
+      .from(TABLES.WINES)
+      .select('id, name, varietal, vintage_year, price, image_url')
+      .eq('winery_id', winery.id)
+      .eq('is_active', true)
+      .order('name'),
+    getClient()
+      .from(TABLES.FLIGHTS)
+      .select('id, name, description, flight_wines(wine_id)')
+      .eq('winery_id', winery.id)
+      .eq('is_active', true)
+      .order('sort_order'),
+  ]);
+
+  if (wErr) throw wErr;
+  if (fErr) throw fErr;
+
+  return { winery, wines, flights };
+}
+
 export async function getFlightsByWinery(wineryId) {
   const { data, error } = await getClient()
     .from(TABLES.FLIGHTS)

@@ -2,7 +2,9 @@ import * as logger from './logger.js';
 
 // Route shapes:
 //   /                                → home (or redirect to admin)
+//   /:winerySlug                     → public winery page
 //   /:winerySlug/:wineId             → public bottle page
+//   /:winerySlug/flight/:flightId    → public flight page
 //   /admin                           → admin login
 //   /admin/wines                     → admin wine list
 //   /admin/wines/new                 → add wine
@@ -57,9 +59,19 @@ export function parsePath(pathname = window.location.pathname) {
     return { view: 'not-found' };
   }
 
+  // /:winerySlug/flight/:flightId
+  if (parts.length === 3 && parts[1] === 'flight') {
+    return { view: 'flight-page', winerySlug: parts[0], flightId: parts[2] };
+  }
+
   // /:winerySlug/:wineId
   if (parts.length === 2) {
     return { view: 'bottle-page', winerySlug: parts[0], wineId: parts[1] };
+  }
+
+  // /:winerySlug
+  if (parts.length === 1) {
+    return { view: 'winery-page', winerySlug: parts[0] };
   }
 
   return { view: 'not-found' };
