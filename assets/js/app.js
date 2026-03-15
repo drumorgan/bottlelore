@@ -37,7 +37,11 @@ async function route() {
         await render(app, routeInfo.winerySlug, routeInfo.wineId);
         break;
       }
-      case 'admin-login':
+      case 'admin-login': {
+        const { renderLogin } = await import('./views/admin-login.js');
+        renderLogin(app);
+        break;
+      }
       case 'admin-wines':
       case 'admin-wine-new':
       case 'admin-wine-edit':
