@@ -5,6 +5,7 @@ import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
 import { createImageUpload } from '../components/image-upload.js';
 import { generateQR, getWineryUrl, downloadQR, printQR } from '../components/qr-generator.js';
+import { createQRModal } from '../components/qr-modal.js';
 
 export async function renderWineryList(container) {
   container.innerHTML = '<div class="loading">Loading wineries...</div>';
@@ -31,20 +32,9 @@ export async function renderWineryList(container) {
         </thead>
         <tbody id="winery-tbody"></tbody>
       </table>
-      <div id="qr-modal" class="qr-modal" hidden>
-        <div class="qr-modal__backdrop"></div>
-        <div class="qr-modal__content">
-          <h2 id="qr-modal-title">QR Code</h2>
-          <div id="qr-modal-canvas"></div>
-          <p id="qr-modal-url" class="qr-modal__url"></p>
-          <div class="qr-modal__actions">
-            <button id="qr-modal-download" class="btn btn--small btn--primary">Download PNG</button>
-            <button id="qr-modal-print" class="btn btn--small btn--outline">Print</button>
-          </div>
-          <button id="qr-modal-close" class="btn btn--secondary">Close</button>
-        </div>
-      </div>
     `;
+
+    const qrModal = createQRModal(container);
 
     const tbody = document.getElementById('winery-tbody');
     const searchInput = document.getElementById('winery-search');
@@ -107,37 +97,16 @@ export async function renderWineryList(container) {
 
       // QR code buttons
       tbody.querySelectorAll('[data-qr]').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', () => {
           const slug = btn.dataset.qr;
           const url = getWineryUrl(slug);
           const winery = list.find(w => w.slug === slug);
-          qrModalWineryName = winery ? winery.name : 'QR Code';
-
-          document.getElementById('qr-modal-title').textContent = qrModalWineryName;
-          document.getElementById('qr-modal-url').textContent = url;
-          document.getElementById('qr-modal-canvas').innerHTML = '';
-
-          qrModal.hidden = false;
-          await generateQR(document.getElementById('qr-modal-canvas'), url);
+          qrModal.open(url, winery ? winery.name : 'QR Code');
         });
       });
     }
 
-    const qrModal = document.getElementById('qr-modal');
-    let qrModalWineryName = '';
-
     renderRows(wineries);
-
-    document.getElementById('qr-modal-download').addEventListener('click', () => {
-      const canvas = document.querySelector('#qr-modal-canvas canvas');
-      if (canvas) downloadQR(canvas, qrModalWineryName);
-    });
-    document.getElementById('qr-modal-print').addEventListener('click', () => {
-      const canvas = document.querySelector('#qr-modal-canvas canvas');
-      if (canvas) printQR(canvas, qrModalWineryName);
-    });
-    document.getElementById('qr-modal-close').addEventListener('click', () => { qrModal.hidden = true; });
-    document.querySelector('.qr-modal__backdrop').addEventListener('click', () => { qrModal.hidden = true; });
 
     // Client-side search
     searchInput.addEventListener('input', () => {

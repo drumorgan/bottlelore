@@ -26,6 +26,29 @@ vi.mock('../assets/js/components/qr-generator.js', () => ({
   printQR: vi.fn(),
 }));
 
+vi.mock('../assets/js/components/qr-modal.js', () => ({
+  createQRModal: vi.fn((parentEl) => {
+    const modal = document.createElement('div');
+    modal.className = 'qr-modal';
+    modal.hidden = true;
+    modal.innerHTML = `
+      <div class="qr-modal__backdrop"></div>
+      <div class="qr-modal__content">
+        <h2 class="qr-modal__title">QR Code</h2>
+        <div class="qr-modal__canvas"></div>
+        <p class="qr-modal__url"></p>
+        <div class="qr-modal__actions">
+          <button class="btn btn--small btn--primary qr-modal__download">Download PNG</button>
+          <button class="btn btn--small btn--outline qr-modal__print">Print</button>
+        </div>
+        <button class="btn btn--secondary qr-modal__close">Close</button>
+      </div>
+    `;
+    parentEl.appendChild(modal);
+    return { open: vi.fn(), close: vi.fn() };
+  }),
+}));
+
 // Let the real tag-input run — it's a pure DOM component, no external deps to mock
 
 import { renderWineList, renderWineForm } from '../assets/js/views/admin-wines.js';
@@ -122,7 +145,7 @@ describe('admin-wines', () => {
 
       await renderWineList(container);
 
-      const modal = container.querySelector('#qr-modal');
+      const modal = container.querySelector('.qr-modal');
       expect(modal).not.toBeNull();
       expect(modal.hidden).toBe(true);
     });
@@ -133,10 +156,10 @@ describe('admin-wines', () => {
 
       await renderWineList(container);
 
-      expect(container.querySelector('#qr-modal-download')).not.toBeNull();
-      expect(container.querySelector('#qr-modal-print')).not.toBeNull();
-      expect(container.querySelector('#qr-modal-download').textContent).toContain('Download');
-      expect(container.querySelector('#qr-modal-print').textContent).toContain('Print');
+      expect(container.querySelector('.qr-modal__download')).not.toBeNull();
+      expect(container.querySelector('.qr-modal__print')).not.toBeNull();
+      expect(container.querySelector('.qr-modal__download').textContent).toContain('Download');
+      expect(container.querySelector('.qr-modal__print').textContent).toContain('Print');
     });
 
     it('shows toast on fetch error', async () => {
