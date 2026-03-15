@@ -1,6 +1,7 @@
 import * as logger from '../logger.js';
 import { escapeHtml, showToast } from '../utils.js';
 import { getWineById } from '../supabase-gateway.js';
+import { navigate } from '../router.js';
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1500;
@@ -70,43 +71,81 @@ export async function render(container, winerySlug, wineId) {
     container.innerHTML = '<div class="error-state"><h1>Wine not found</h1><p>This QR code may be invalid or the wine is no longer available.</p></div>';
     return;
   }
-  const pairings = (wine.food_pairings || []).map(p => `<li>${escapeHtml(p)}</li>`).join('');
+
+  // Build meta items (varietal, vintage, region)
+  const metaItems = [];
+  if (wine.varietal) metaItems.push(escapeHtml(wine.varietal));
+  if (wine.vintage_year) metaItems.push(escapeHtml(String(wine.vintage_year)));
+  if (wine.region) metaItems.push(escapeHtml(wine.region));
+  const metaHtml = metaItems.length > 0
+    ? `<div class="wine-meta">${metaItems.map((m, i) => i > 0 ? `<div class="wine-meta-dot"></div><span>${m}</span>` : `<span>${m}</span>`).join('')}</div>`
+    : '';
+
+  // Build food pairings
+  const pairingsHtml = (wine.food_pairings || []).map(p =>
+    `<div class="pairing-item"><span class="pairing-bullet"></span>${escapeHtml(p)}</div>`
+  ).join('');
 
   container.innerHTML = `
     <article class="bottle-page">
-      <header class="bottle-page__header">
-        <h2 class="bottle-page__winery">${escapeHtml(winery.name)}</h2>
-        <h1 class="bottle-page__name">${escapeHtml(wine.name)}</h1>
-        ${wine.vintage_year ? `<span class="bottle-page__vintage">${escapeHtml(String(wine.vintage_year))}</span>` : ''}
-      </header>
+      <nav class="page-nav">
+        <a class="page-nav__link" href="/${escapeHtml(winerySlug)}" data-nav>
+          <span class="page-nav__arrow">&larr;</span> ${escapeHtml(winery.name || 'Winery')}
+        </a>
+      </nav>
+
+      <div class="winery-name">${escapeHtml(winery.name)}</div>
+
+      <div class="hero">
+        <h1 class="wine-name">${escapeHtml(wine.name)}</h1>
+        ${metaHtml}
+      </div>
+
+      <div class="ornament">&#10022;</div>
+      <div class="ornament-rule">
+        <div class="ornament-line"></div>
+        <div class="ornament-diamond"></div>
+        <div class="ornament-line"></div>
+      </div>
 
       ${wine.image_url ? `<img class="bottle-page__image" src="${escapeHtml(wine.image_url)}" alt="${escapeHtml(wine.name)}" />` : ''}
 
-      <div class="bottle-page__details">
-        ${wine.varietal ? `<p class="bottle-page__varietal">${escapeHtml(wine.varietal)}</p>` : ''}
-        ${wine.region ? `<p class="bottle-page__region">${escapeHtml(wine.region)}</p>` : ''}
-        ${wine.price ? `<p class="bottle-page__price">${escapeHtml(wine.price)}</p>` : ''}
-      </div>
-
-      ${wine.description ? `
-      <section class="bottle-page__section">
-        <h3>About This Wine</h3>
-        <p>${escapeHtml(wine.description)}</p>
-      </section>` : ''}
+      ${wine.description ? `<p class="description">${escapeHtml(wine.description)}</p>` : ''}
 
       ${wine.tasting_notes ? `
-      <section class="bottle-page__section">
-        <h3>Tasting Notes</h3>
-        <p>${escapeHtml(wine.tasting_notes)}</p>
-      </section>` : ''}
+      <div class="section">
+        <div class="section-label">Tasting Notes</div>
+        <p class="section-text">${escapeHtml(wine.tasting_notes)}</p>
+      </div>` : ''}
 
-      ${pairings ? `
-      <section class="bottle-page__section">
-        <h3>Food Pairings</h3>
-        <ul class="bottle-page__pairings">${pairings}</ul>
-      </section>` : ''}
+      ${pairingsHtml ? `
+      <div class="section">
+        <div class="section-label">Pairs Well With</div>
+        <div class="pairings">${pairingsHtml}</div>
+      </div>` : ''}
+
+      ${wine.price ? `
+      <div class="price-section">
+        <span class="price-label">Price</span>
+        <span class="price-value">${escapeHtml(wine.price)}</span>
+        <span class="price-unit">per bottle</span>
+      </div>` : ''}
+
+      <div class="bottlelore-brand">
+        <div class="brand-rule"></div>
+        <div class="brand-name">BottleLore</div>
+        <div class="brand-tagline">Every bottle has a story</div>
+      </div>
     </article>
   `;
+
+  // SPA navigation for internal links
+  container.querySelectorAll('[data-nav]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigate(link.getAttribute('href'));
+    });
+  });
 }
 
 function renderConnectionError(container, winerySlug, wineId) {

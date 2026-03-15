@@ -1,6 +1,7 @@
 import * as logger from '../logger.js';
 import { escapeHtml, showToast } from '../utils.js';
 import { getPublicFlightById } from '../supabase-gateway.js';
+import { navigate } from '../router.js';
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1500;
@@ -71,38 +72,80 @@ export async function render(container, winerySlug, flightId) {
     .map(fw => fw.wines)
     .filter(w => w && w.is_active !== false);
 
-  const wineCards = sortedWines.map(w => {
-    const pairings = (w.food_pairings || []).map(p => `<li>${escapeHtml(p)}</li>`).join('');
+  const wineCards = sortedWines.map((w, idx) => {
+    const pairings = (w.food_pairings || []).map(p =>
+      `<div class="pairing-item"><span class="pairing-bullet"></span>${escapeHtml(p)}</div>`
+    ).join('');
     return `
-      <div class="flight-page__wine-card">
-        ${w.image_url ? `<img class="flight-page__wine-image" src="${escapeHtml(w.image_url)}" alt="${escapeHtml(w.name)}" />` : ''}
-        <div class="flight-page__wine-info">
-          <h3 class="flight-page__wine-name">${escapeHtml(w.name)}</h3>
-          ${w.varietal ? `<p class="flight-page__wine-varietal">${escapeHtml(w.varietal)}</p>` : ''}
-          ${w.vintage_year ? `<span class="flight-page__wine-vintage">${escapeHtml(String(w.vintage_year))}</span>` : ''}
-          ${w.price ? `<p class="flight-page__wine-price">${escapeHtml(w.price)}</p>` : ''}
-          ${w.description ? `<p class="flight-page__wine-desc">${escapeHtml(w.description)}</p>` : ''}
-          ${w.tasting_notes ? `<p class="flight-page__wine-notes"><strong>Tasting Notes:</strong> ${escapeHtml(w.tasting_notes)}</p>` : ''}
-          ${pairings ? `<ul class="flight-page__wine-pairings">${pairings}</ul>` : ''}
+      <div class="flight-wine" style="animation-delay: ${0.1 + idx * 0.08}s">
+        <a class="flight-wine__link" href="/${escapeHtml(winerySlug)}/${escapeHtml(w.id)}" data-nav>
+          <span class="flight-wine__number">${idx + 1}</span>
+          <span class="flight-wine__view">View details &rarr;</span>
+        </a>
+        ${w.image_url ? `<img class="flight-wine__image" src="${escapeHtml(w.image_url)}" alt="${escapeHtml(w.name)}" />` : ''}
+        <h3 class="flight-wine__name">${escapeHtml(w.name)}</h3>
+        <div class="flight-wine__meta">
+          ${w.varietal ? `<span>${escapeHtml(w.varietal)}</span>` : ''}
+          ${w.varietal && w.vintage_year ? '<div class="wine-meta-dot"></div>' : ''}
+          ${w.vintage_year ? `<span>${escapeHtml(String(w.vintage_year))}</span>` : ''}
         </div>
+        ${w.price ? `<p class="flight-wine__price">${escapeHtml(w.price)}</p>` : ''}
+        ${w.description ? `<p class="flight-wine__desc">${escapeHtml(w.description)}</p>` : ''}
+        ${w.tasting_notes ? `
+          <div class="flight-wine__notes">
+            <span class="flight-wine__notes-label">Tasting Notes</span>
+            <p>${escapeHtml(w.tasting_notes)}</p>
+          </div>` : ''}
+        ${pairings ? `
+          <div class="flight-wine__pairings">
+            <span class="flight-wine__pairings-label">Pairs With</span>
+            <div class="pairings">${pairings}</div>
+          </div>` : ''}
       </div>
     `;
   }).join('');
 
   container.innerHTML = `
     <article class="flight-page">
+      <nav class="page-nav">
+        <a class="page-nav__link" href="/${escapeHtml(winerySlug)}" data-nav>
+          <span class="page-nav__arrow">&larr;</span> ${escapeHtml(winery.name || 'Winery')}
+        </a>
+      </nav>
+
       <header class="flight-page__header">
-        <h2 class="flight-page__winery">${escapeHtml(winery.name)}</h2>
-        <h1 class="flight-page__name">${escapeHtml(flight.name)}</h1>
-        ${flight.description ? `<p class="flight-page__description">${escapeHtml(flight.description)}</p>` : ''}
+        <div class="winery-name">${escapeHtml(winery.name)}</div>
+        <h1 class="wine-name">${escapeHtml(flight.name)}</h1>
+        ${flight.description ? `<p class="description" style="margin-top: 12px">${escapeHtml(flight.description)}</p>` : ''}
       </header>
 
-      <section class="flight-page__wines">
-        <h2>${escapeHtml(String(sortedWines.length))} Wine${sortedWines.length !== 1 ? 's' : ''} in This Flight</h2>
-        ${sortedWines.length === 0 ? '<p>No wines are currently available in this flight.</p>' : wineCards}
-      </section>
+      <div class="ornament">&#10022;</div>
+      <div class="ornament-rule">
+        <div class="ornament-line"></div>
+        <div class="ornament-diamond"></div>
+        <div class="ornament-line"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">${escapeHtml(String(sortedWines.length))} Wine${sortedWines.length !== 1 ? 's' : ''} in This Flight</div>
+        ${sortedWines.length === 0 ? '<p class="section-text">No wines are currently available in this flight.</p>' : `<div class="flight-wines">${wineCards}</div>`}
+      </div>
+
+      <div class="bottlelore-brand">
+        <div class="brand-rule"></div>
+        <div class="brand-name">BottleLore</div>
+        <div class="brand-tagline">Every bottle has a story</div>
+      </div>
     </article>
   `;
+
+  // SPA navigation for internal links
+  container.querySelectorAll('[data-nav]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigate(link.getAttribute('href'));
+    });
+  });
 }
 
 function renderConnectionError(container, winerySlug, flightId) {

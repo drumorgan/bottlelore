@@ -4,6 +4,7 @@ import { parsePath } from './router.js';
 import { onAuthStateChange } from './supabase-gateway.js';
 import { setCurrentUser, resetAllState, isLoggedIn, setUserRole, setSuperAdmin, setUserWineryAssignments } from './state.js';
 import { checkIsSuperAdmin, getAdminWineries } from './supabase-gateway.js';
+import { init as initTheme, renderToggle as renderThemeToggle } from './theme.js';
 
 // Build info is injected by Vite at compile time — use try/catch for dev/unbundled mode
 // (Safari/iPad throws ReferenceError on bare globals even with typeof guard)
@@ -14,6 +15,7 @@ try { buildTime = __BUILD_TIME__; } catch { /* unbundled */ } // eslint-disable-
 logger.info('BottleLore starting', { build: buildSha, time: buildTime });
 
 registerGlobalErrorHandlers();
+initTheme();
 
 // Resolved once the first auth state event fires (session restored or no session)
 let authReady;
@@ -28,6 +30,15 @@ async function route() {
   // (skip for admin-login — it doesn't need auth and should render instantly)
   if (view.startsWith('admin') && view !== 'admin-login' && !isLoggedIn()) {
     await authReadyPromise;
+  }
+
+  // Show theme toggle on public guest pages, hide on admin
+  const isPublicPage = ['bottle-page', 'flight-page', 'winery-page'].includes(view);
+  if (isPublicPage) {
+    renderThemeToggle();
+  } else {
+    const toggle = document.querySelector('.theme-toggle');
+    if (toggle) toggle.remove();
   }
 
   try {
