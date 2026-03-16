@@ -32,12 +32,24 @@ Always build in this sequence:
 logger.js → utils.js → database-tables.js → supabase-gateway.js
 → state.js → router.js → views → components
 
+## Git / Branching
+- Default branch is `main` — there is ONLY main
+- Do NOT create PRs, do NOT suggest PR workflows
+- Branch changes must be merged to main to take effect in production
+
 ## Known Gotchas
 - Safari/iPad Supabase auth: keep config minimal, autoRefreshToken + persistSession
 - Never auto-recreate Supabase client — trust the SDK's internal state management
 - assets/dist/ must NOT be in FTP exclude list (silent deploy bug from prior project)
 - .htaccess must rewrite ALL routes to index.php for SPA routing to work
 - ES module cache: use .htaccess no-cache header on /assets/js/ directory
+
+## Supabase Edge Functions
+- ALL edge functions must be deployed with `--no-verify-jwt` flag
+- Supabase relay-level JWT verification rejects tokens before function code runs
+- Functions handle their own auth internally (check Authorization header, verify user, check permissions)
+- Without `--no-verify-jwt`, invocations return 401 with NO function logs (only "booted" appears)
+- The Supabase SDK `functions.invoke()` auto-attaches the auth token from the session
 
 ## Deployment Flow
 Push to main → GitHub Actions → test job → build job → FTP deploy to InMotion
