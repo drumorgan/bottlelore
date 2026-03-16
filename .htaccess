@@ -12,6 +12,10 @@ RewriteRule ^(.*)$ https://www.bottlelore.com/$1 [L,R=301]
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+# Never rewrite JS/CSS asset requests to index.php — return real 404 instead
+# (prevents 'text/html is not a valid JavaScript MIME type' errors)
+RewriteRule \.(js|css|map)$ - [L]
+
 # SPA routing — send all requests to index.php
 # Except real files and directories
 RewriteCond %{REQUEST_FILENAME} !-f

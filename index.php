@@ -37,14 +37,40 @@ if (file_exists($manifestPath)) {
     </script>
 </head>
 <body>
-    <div id="app"></div>
-
+    <div id="app">
+      <!-- Fallback: visible while JS loads (replaced once app renders) -->
+      <div id="app-loading" style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Georgia,serif;color:#8a7968;background:#f5efe4;">
+        <p>Loading&hellip;</p>
+      </div>
+    </div>
 
     <!-- Catch early JS errors before app bundle loads -->
     <script>
       window.__earlyErrors = [];
       window.addEventListener('error', function(e) { window.__earlyErrors.push('ERROR: ' + e.message + ' (' + e.filename + ':' + e.lineno + ')'); });
       window.addEventListener('unhandledrejection', function(e) { window.__earlyErrors.push('PROMISE: ' + (e.reason?.message || e.reason)); });
+    </script>
+
+    <!-- Show errors visibly after 5s if app never renders (iPad has no DevTools) -->
+    <script>
+      setTimeout(function() {
+        var app = document.getElementById('app');
+        var loading = document.getElementById('app-loading');
+        if (loading && app.children.length === 1) {
+          var msgs = window.__earlyErrors.length
+            ? window.__earlyErrors.join('<br>')
+            : 'No JS errors captured. Bundle may have failed to load.';
+          var bundleSrc = <?php echo json_encode($bundleFile ?: 'NO BUNDLE (manifest missing)'); ?>;
+          loading.innerHTML =
+            '<div style="text-align:center;max-width:500px;padding:20px;">' +
+            '<p style="color:#c0392b;font-weight:bold;">App failed to start</p>' +
+            '<p style="font-size:13px;color:#666;margin-top:12px;">Bundle: ' + bundleSrc + '</p>' +
+            '<details style="margin-top:12px;text-align:left;font-size:12px;color:#888;">' +
+            '<summary>Error details</summary>' +
+            '<pre style="white-space:pre-wrap;margin-top:8px;">' + msgs + '</pre>' +
+            '</details></div>';
+        }
+      }, 5000);
     </script>
 
     <!-- Load bundle (production) or dev modules -->
