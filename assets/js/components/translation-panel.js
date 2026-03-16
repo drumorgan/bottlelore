@@ -101,7 +101,8 @@ export function createTranslationPanel(container, { fields, existingTranslations
       showToast('Translation complete. Review and edit before saving.', 'success');
     } catch (err) {
       logger.error('Translation failed', err);
-      showToast('Translation failed. Please try again.', 'error');
+      const detail = err?.message || String(err);
+      showToast(`Translation failed: ${detail}`, 'error');
     } finally {
       translateBtn.disabled = false;
       translateBtn.textContent = 'Translate to Spanish';
