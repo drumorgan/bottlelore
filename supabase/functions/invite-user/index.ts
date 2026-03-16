@@ -14,6 +14,7 @@ Deno.serve(async (req: Request) => {
   try {
     // Validate request
     if (req.method !== "POST") {
+      console.error("invite-user: method not allowed:", req.method);
       return new Response(JSON.stringify({ error: "Method not allowed" }), {
         status: 405,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -21,8 +22,10 @@ Deno.serve(async (req: Request) => {
     }
 
     const { email, winery_id, role } = await req.json();
+    console.log("invite-user: request received", { email, winery_id, role });
 
     if (!email || !winery_id || !role) {
+      console.error("invite-user: missing fields", { email, winery_id, role });
       return new Response(
         JSON.stringify({ error: "Missing required fields: email, winery_id, role" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -39,6 +42,7 @@ Deno.serve(async (req: Request) => {
     // Create a client with the caller's JWT to check authorization
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      console.error("invite-user: missing authorization header");
       return new Response(
         JSON.stringify({ error: "Missing authorization header" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -56,19 +60,27 @@ Deno.serve(async (req: Request) => {
 
     const { data: { user: caller }, error: authErr } = await callerClient.auth.getUser();
     if (authErr || !caller) {
+      console.error("invite-user: auth failed", authErr?.message);
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    console.log("invite-user: caller authenticated", caller.id);
 
     // Check caller is super admin or winery owner
-    const { data: isSA } = await callerClient.rpc("is_super_admin");
-    const { data: isOwner } = await callerClient.rpc("is_winery_owner", {
+    const { data: isSA, error: saErr } = await callerClient.rpc("is_super_admin");
+    if (saErr) console.error("invite-user: is_super_admin RPC error", saErr.message);
+
+    const { data: isOwner, error: ownerErr } = await callerClient.rpc("is_winery_owner", {
       check_winery_id: winery_id,
     });
+    if (ownerErr) console.error("invite-user: is_winery_owner RPC error", ownerErr.message);
+
+    console.log("invite-user: permission check", { isSA, isOwner, saErr: saErr?.message, ownerErr: ownerErr?.message });
 
     if (!isSA && !isOwner) {
+      console.error("invite-user: permission denied for user", caller.id);
       return new Response(
         JSON.stringify({ error: "You do not have permission to invite users to this winery" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -81,7 +93,15 @@ Deno.serve(async (req: Request) => {
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
     // Check if user already exists
-    const { data: existingUsers } = await adminClient.auth.admin.listUsers();
+    const { data: existingUsers, error: listErr } = await adminClient.auth.admin.listUsers();
+    if (listErr) {
+      console.error("invite-user: listUsers failed", listErr.message);
+      return new Response(
+        JSON.stringify({ error: `Failed to list users: ${listErr.message}` }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const existingUser = existingUsers?.users?.find(
       (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
     );
@@ -90,6 +110,7 @@ Deno.serve(async (req: Request) => {
 
     if (existingUser) {
       userId = existingUser.id;
+      console.log("invite-user: user already exists", userId);
 
       // Check if already linked to this winery
       const { data: existingLink } = await adminClient
@@ -100,6 +121,7 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (existingLink) {
+        console.error("invite-user: user already linked to winery");
         return new Response(
           JSON.stringify({ error: "This user is already assigned to this winery" }),
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -107,10 +129,12 @@ Deno.serve(async (req: Request) => {
       }
     } else {
       // Invite new user via email
+      console.log("invite-user: inviting new user", email);
       const { data: inviteData, error: inviteErr } =
         await adminClient.auth.admin.inviteUserByEmail(email);
 
       if (inviteErr) {
+        console.error("invite-user: inviteUserByEmail failed", inviteErr.message);
         return new Response(
           JSON.stringify({ error: `Failed to invite user: ${inviteErr.message}` }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -128,12 +152,14 @@ Deno.serve(async (req: Request) => {
     });
 
     if (linkErr) {
+      console.error("invite-user: link_user_to_winery failed", linkErr.message);
       return new Response(
         JSON.stringify({ error: `Failed to link user: ${linkErr.message}` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    console.log("invite-user: success", { userId, existed: !!existingUser });
     return new Response(
       JSON.stringify({
         success: true,
@@ -146,6 +172,7 @@ Deno.serve(async (req: Request) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("invite-user: unhandled error", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
