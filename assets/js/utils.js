@@ -1,4 +1,5 @@
 import * as logger from './logger.js';
+import { getLocale } from './i18n.js';
 
 // XSS prevention — use on ALL user content before innerHTML
 export function escapeHtml(str) {
@@ -30,7 +31,9 @@ export function showToast(message, type = 'info', durationMs = 3500) {
 
 export function formatDate(dateStr) {
   if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  const localeMap = { en: 'en-US', es: 'es-ES' };
+  const locale = localeMap[getLocale()] || 'en-US';
+  return new Date(dateStr).toLocaleDateString(locale, {
     year: 'numeric', month: 'long', day: 'numeric'
   });
 }

@@ -118,7 +118,7 @@ export async function toggleWineryActive(id, isActive) {
 export async function getWineById(id) {
   const { data, error } = await getClient()
     .from(TABLES.WINES)
-    .select('*, wineries(name, slug, theme_preference)')
+    .select('*, translations, wineries(name, slug, theme_preference)')
     .eq('id', id)
     .eq('is_active', true)
     .single();
@@ -169,7 +169,7 @@ export async function toggleWineActive(id, isActive) {
 export async function getPublicFlightById(id) {
   const { data, error } = await getClient()
     .from(TABLES.FLIGHTS)
-    .select('*, wineries(name, slug, theme_preference), flight_wines(sort_order, wines(id, name, varietal, vintage_year, price, description, tasting_notes, food_pairings, image_url, is_active))')
+    .select('*, translations, wineries(name, slug, theme_preference), flight_wines(sort_order, wines(id, name, varietal, vintage_year, price, description, tasting_notes, food_pairings, image_url, is_active, translations))')
     .eq('id', id)
     .eq('is_active', true)
     .single();
@@ -186,13 +186,13 @@ export async function getPublicWineryData(slug) {
   const [{ data: wines, error: wErr }, { data: flights, error: fErr }] = await Promise.all([
     getClient()
       .from(TABLES.WINES)
-      .select('id, name, varietal, vintage_year, price, image_url')
+      .select('id, name, varietal, vintage_year, price, image_url, translations')
       .eq('winery_id', winery.id)
       .eq('is_active', true)
       .order('name'),
     getClient()
       .from(TABLES.FLIGHTS)
-      .select('id, name, description, flight_wines(wine_id)')
+      .select('id, name, description, translations, flight_wines(wine_id)')
       .eq('winery_id', winery.id)
       .eq('is_active', true)
       .order('sort_order'),
@@ -388,7 +388,7 @@ export function getPublicUrl(bucket, path) {
 // ── Translations ────────────────────────────────────────────────────────────
 
 /**
- * Call the translate-content Edge Function to translate text via DeepL.
+ * Call the translate-content Edge Function to translate text via MyMemory.
  * @param {Object} fields — key/value pairs to translate (e.g. { name: 'Red Wine', description: '...' })
  * @param {string} targetLocale — target locale code (e.g. 'es')
  * @returns {Object} — translated key/value pairs

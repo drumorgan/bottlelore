@@ -1,8 +1,8 @@
 /**
  * Supabase Edge Function: translate-content
  *
- * Translates text fields using the DeepL API Free tier (500K chars/month).
- * DeepL API key must be stored as Supabase secret: DEEPL_API_KEY
+ * Translates text fields using the MyMemory API (free, no API key required).
+ * Anonymous usage: 5,000 chars/day. Set MYMEMORY_EMAIL secret for 30,000 chars/day.
  *
  * Request body:
  *   { fields: { name: "Red Wine", description: "..." }, target_locale: "es" }
@@ -17,11 +17,43 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Map our locale codes to DeepL language codes
-const LOCALE_TO_DEEPL: Record<string, string> = {
-  es: "ES",
-  en: "EN",
+// Map our locale codes to MyMemory language pairs (source|target)
+const LOCALE_MAP: Record<string, string> = {
+  es: "en|es",
+  en: "es|en",
 };
+
+async function translateText(
+  text: string,
+  langPair: string,
+  email?: string
+): Promise<string> {
+  const params = new URLSearchParams({
+    q: text,
+    langpair: langPair,
+  });
+  if (email) {
+    params.set("de", email);
+  }
+
+  const res = await fetch(
+    `https://api.mymemory.translated.net/get?${params.toString()}`
+  );
+
+  if (!res.ok) {
+    throw new Error(`MyMemory API error: ${res.status}`);
+  }
+
+  const data = await res.json();
+
+  if (data.responseStatus !== 200) {
+    throw new Error(
+      data.responseDetails || `MyMemory error: ${data.responseStatus}`
+    );
+  }
+
+  return data.responseData.translatedText;
+}
 
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight
@@ -67,8 +99,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const targetLang = LOCALE_TO_DEEPL[target_locale];
-    if (!targetLang) {
+    const langPair = LOCALE_MAP[target_locale];
+    if (!langPair) {
       return new Response(
         JSON.stringify({
           error: `Unsupported target locale: ${target_locale}`,
@@ -80,101 +112,27 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const deeplApiKey = Deno.env.get("DEEPL_API_KEY");
-    if (!deeplApiKey) {
-      return new Response(
-        JSON.stringify({ error: "DeepL API key not configured" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+    // Optional: set MYMEMORY_EMAIL for higher rate limits (30K chars/day)
+    const email = Deno.env.get("MYMEMORY_EMAIL") || undefined;
 
-    // Collect non-empty text values to translate
-    const fieldKeys: string[] = [];
-    const textsToTranslate: string[] = [];
+    // Collect non-empty fields to translate
+    const translations: Record<string, string | string[]> = {};
 
     for (const [key, value] of Object.entries(fields)) {
       if (typeof value === "string" && value.trim()) {
-        fieldKeys.push(key);
-        textsToTranslate.push(value);
+        translations[key] = await translateText(value, langPair, email);
       } else if (Array.isArray(value)) {
-        // For arrays (like food_pairings), join with a delimiter for batch translation
         const filtered = value.filter(
           (v: unknown) => typeof v === "string" && (v as string).trim()
         );
         if (filtered.length > 0) {
-          fieldKeys.push(key);
-          textsToTranslate.push(
-            filtered.map((v: string) => v).join("\n---SPLIT---\n")
-          );
+          // Translate each array item individually for accuracy
+          const translated: string[] = [];
+          for (const item of filtered) {
+            translated.push(await translateText(item, langPair, email));
+          }
+          translations[key] = translated;
         }
-      }
-    }
-
-    if (textsToTranslate.length === 0) {
-      return new Response(
-        JSON.stringify({ translations: {} }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // DeepL API Free uses api-free.deepl.com
-    const deeplUrl = deeplApiKey.endsWith(":fx")
-      ? "https://api-free.deepl.com/v2/translate"
-      : "https://api.deepl.com/v2/translate";
-
-    // Build form data for DeepL
-    const formData = new URLSearchParams();
-    for (const text of textsToTranslate) {
-      formData.append("text", text);
-    }
-    formData.append("source_lang", "EN");
-    formData.append("target_lang", targetLang);
-
-    const deeplResponse = await fetch(deeplUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `DeepL-Auth-Key ${deeplApiKey}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: formData.toString(),
-    });
-
-    if (!deeplResponse.ok) {
-      const errText = await deeplResponse.text();
-      return new Response(
-        JSON.stringify({
-          error: `DeepL API error: ${deeplResponse.status} ${errText}`,
-        }),
-        {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    const deeplData = await deeplResponse.json();
-
-    // Map translated texts back to field keys
-    const translations: Record<string, string | string[]> = {};
-
-    for (let i = 0; i < fieldKeys.length; i++) {
-      const key = fieldKeys[i];
-      const translatedText = deeplData.translations?.[i]?.text || "";
-
-      // Check if original was an array (used delimiter)
-      if (Array.isArray(fields[key])) {
-        translations[key] = translatedText
-          .split("\n---SPLIT---\n")
-          .map((s: string) => s.trim())
-          .filter((s: string) => s);
-      } else {
-        translations[key] = translatedText;
       }
     }
 
