@@ -24,7 +24,7 @@ export async function renderStaffList(container) {
     const rows = staff.length === 0
       ? '<tr><td colspan="4">No staff members yet. Invite someone to get started.</td></tr>'
       : staff.map(s => {
-        const isSelf = s.user_id === currentUser?.id;
+        const isSelf = s.user_id === currentUser?.id || s.email === currentUser?.email;
         const newRole = s.role === 'staff' ? 'owner' : 'staff';
         const roleLabel = s.role === 'staff' ? 'Promote to Owner' : 'Demote to Staff';
         const roleBtn = canRemove && !isSelf
@@ -81,7 +81,7 @@ export async function renderStaffList(container) {
           await renderStaffList(container);
         } catch (err) {
           logger.error('Failed to change role', err);
-          showToast('Could not change role.', 'error');
+          showToast(`Could not change role. [${err.message}]`, 'error');
         }
       });
     });
@@ -99,7 +99,7 @@ export async function renderStaffList(container) {
           await renderStaffList(container);
         } catch (err) {
           logger.error('Failed to remove staff', err);
-          showToast('Could not remove staff member.', 'error');
+          showToast(`Could not remove staff member. [${err.message}]`, 'error');
         }
       });
     });
