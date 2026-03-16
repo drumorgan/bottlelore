@@ -196,7 +196,7 @@ export async function renderWineryForm(container) {
       description: { label: 'Description', type: 'textarea' },
       hours: { label: 'Hours', type: 'text' },
     },
-    existingTranslations: winery?.translations?.es || null,
+    existingTranslations: null,
     getSourceValues: () => ({
       name: document.getElementById('winery-name').value.trim(),
       description: document.getElementById('winery-description').value.trim(),
@@ -235,7 +235,7 @@ export async function renderWineryForm(container) {
       social_twitter: document.getElementById('winery-twitter').value.trim() || null,
       logo_url: logoUpload.getUrl(),
       theme_preference: document.getElementById('winery-theme').value,
-      translations: translationPanel.getTranslations() || winery?.translations || {},
+      translations: translationPanel.getTranslations() || {},
     };
 
     submitBtn.disabled = true;
