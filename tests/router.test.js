@@ -68,10 +68,9 @@ describe('parsePath', () => {
       expect(parsePath('/admin/wineries/new')).toEqual({ view: 'admin-winery-new' });
     });
 
-    it('returns admin-winery-edit with wineryId', () => {
+    it('returns not-found for removed winery edit route', () => {
       expect(parsePath('/admin/wineries/winery-456/edit')).toEqual({
-        view: 'admin-winery-edit',
-        wineryId: 'winery-456',
+        view: 'not-found',
       });
     });
   });

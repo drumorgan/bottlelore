@@ -1,6 +1,6 @@
 import * as logger from '../logger.js';
 import { escapeHtml, showToast, slugify } from '../utils.js';
-import { navigate } from '../router.js';
+
 import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
 import { createImageUpload } from '../components/image-upload.js';

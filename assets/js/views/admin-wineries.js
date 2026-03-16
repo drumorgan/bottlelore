@@ -4,7 +4,7 @@ import { navigate } from '../router.js';
 import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
 import { createImageUpload } from '../components/image-upload.js';
-import { generateQR, getWineryUrl, downloadQR, printQR } from '../components/qr-generator.js';
+import { getWineryUrl } from '../components/qr-generator.js';
 import { createQRModal } from '../components/qr-modal.js';
 import { createTranslationPanel } from '../components/translation-panel.js';
 
