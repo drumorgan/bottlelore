@@ -329,7 +329,18 @@ export async function inviteUser(email, wineryId, role) {
     .functions.invoke('invite-user', {
       body: { email, winery_id: wineryId, role },
     });
-  if (error) throw error;
+  if (error) {
+    let detail = error.message || 'Unknown edge function error';
+    if (error.context?.body) {
+      try {
+        const body = typeof error.context.body === 'string'
+          ? JSON.parse(error.context.body)
+          : error.context.body;
+        if (body?.error) detail = body.error;
+      } catch (_) { /* ignore parse errors */ }
+    }
+    throw new Error(detail);
+  }
   if (data?.error) throw new Error(data.error);
   return data;
 }
