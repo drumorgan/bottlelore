@@ -331,11 +331,9 @@ export async function inviteUser(email, wineryId, role) {
     });
   if (error) {
     let detail = error.message || 'Unknown edge function error';
-    if (error.context?.body) {
+    if (error.context && typeof error.context.json === 'function') {
       try {
-        const body = typeof error.context.body === 'string'
-          ? JSON.parse(error.context.body)
-          : error.context.body;
+        const body = await error.context.json();
         if (body?.error) detail = body.error;
       } catch (_) { /* ignore parse errors */ }
     }
@@ -412,11 +410,9 @@ export async function translateContent(fields, targetLocale) {
   if (error) {
     // Extract details from FunctionsHttpError / FunctionsRelayError
     let detail = error.message || 'Unknown edge function error';
-    if (error.context?.body) {
+    if (error.context && typeof error.context.json === 'function') {
       try {
-        const body = typeof error.context.body === 'string'
-          ? JSON.parse(error.context.body)
-          : error.context.body;
+        const body = await error.context.json();
         if (body?.error) detail = body.error;
       } catch (_) { /* ignore parse errors */ }
     }
