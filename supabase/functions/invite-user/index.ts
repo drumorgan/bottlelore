@@ -144,17 +144,16 @@ Deno.serve(async (req: Request) => {
       userId = inviteData.user.id;
     }
 
-    // Link user to winery using the DB function (respects authorization checks)
-    const { error: linkErr } = await callerClient.rpc("link_user_to_winery", {
-      target_user_id: userId,
-      target_winery_id: winery_id,
-      target_role: role,
-    });
+    // Link user to winery directly via service role (bypasses RLS).
+    // Authorization was already verified above (caller is super admin or winery owner).
+    const { error: linkErr } = await adminClient
+      .from("winery_admins")
+      .insert({ user_id: userId, winery_id, role });
 
     if (linkErr) {
-      console.error("invite-user: link_user_to_winery failed", linkErr.message);
+      console.error("invite-user: winery_admins insert failed", linkErr.message);
       return new Response(
-        JSON.stringify({ error: `Failed to link user: ${linkErr.message}` }),
+        JSON.stringify({ error: `Failed to link user to winery: ${linkErr.message}` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
