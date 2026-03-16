@@ -1,3 +1,6 @@
+# Serve index.php for root directory (SPA entry point)
+DirectoryIndex index.php
+
 # Force HTTPS + normalize to www
 RewriteEngine On
 
