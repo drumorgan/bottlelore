@@ -37,7 +37,6 @@ export function parsePath(pathname = window.location.pathname) {
     if (parts[1] === 'wineries') {
       if (parts.length === 2) return { view: 'admin-wineries' };
       if (parts[2] === 'new') return { view: 'admin-winery-new' };
-      if (parts[3] === 'edit') return { view: 'admin-winery-edit', wineryId: parts[2] };
     }
 
     if (parts[1] === 'winery' && parts[2] === 'profile') {
