@@ -706,3 +706,51 @@
 .flight-page .section               { animation-delay: 0.24s; }
 .flight-page .bottlelore-brand      { animation-delay: 0.48s; }
 
+/* ── LANGUAGE TOGGLE ───────────────────────────────────────────────────── */
+
+.page-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-nav--winery {
+  justify-content: flex-end;
+}
+
+.lang-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Cormorant SC', serif;
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.lang-toggle__btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  transition: color 0.2s;
+}
+
+.lang-toggle__btn--active {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.lang-toggle__btn:hover {
+  color: var(--text-primary);
+}
+
+.lang-toggle__sep {
+  color: var(--text-secondary);
+  opacity: 0.4;
+}
+
