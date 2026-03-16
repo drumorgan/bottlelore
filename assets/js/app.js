@@ -10,6 +10,7 @@ import { detectLocale } from './i18n.js';
 // Check if arriving via invite accept link (Supabase puts tokens in URL hash)
 const _hashParams = new URLSearchParams(window.location.hash.substring(1));
 const _isInviteAccept = _hashParams.get('type') === 'invite';
+const _authError = _hashParams.get('error_description');
 
 // Build info is injected by Vite at compile time — use try/catch for dev/unbundled mode
 // (Safari/iPad throws ReferenceError on bare globals even with typeof guard)
@@ -22,6 +23,15 @@ logger.info('BottleLore starting', { build: buildSha, time: buildTime });
 registerGlobalErrorHandlers();
 initTheme();
 detectLocale();
+
+// Surface Supabase auth errors from URL hash (e.g. expired invite links)
+if (_authError) {
+  const friendly = _hashParams.get('error_code') === 'otp_expired'
+    ? 'This invite link has expired. Please ask the winery admin to send a new one.'
+    : decodeURIComponent(_authError);
+  showToast(friendly, 'error');
+  window.history.replaceState({}, '', window.location.pathname);
+}
 
 // Resolved once the first auth state event fires (session restored or no session)
 let authReady;
