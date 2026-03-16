@@ -358,12 +358,11 @@ export async function updateWineryAdminRole(adminId, newRole) {
 
 /**
  * Remove a winery admin by their winery_admins row ID.
+ * Uses a security definer RPC for reliable permission checks.
  */
 export async function removeWineryAdmin(adminId) {
   const { error } = await getClient()
-    .from(TABLES.WINERY_ADMINS)
-    .delete()
-    .eq('id', adminId);
+    .rpc('remove_winery_admin', { target_admin_id: adminId });
   if (error) throw error;
 }
 

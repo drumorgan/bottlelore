@@ -331,17 +331,11 @@ describe('supabase-gateway', () => {
   });
 
   describe('removeWineryAdmin', () => {
-    it('deletes by admin id', async () => {
-      const chain = {
-        delete: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      };
-      mockFrom.mockReturnValue(chain);
+    it('calls remove_winery_admin RPC', async () => {
+      mockRpc.mockResolvedValue({ error: null });
 
       await gateway.removeWineryAdmin('a1');
-      expect(mockFrom).toHaveBeenCalledWith('winery_admins');
-      expect(chain.delete).toHaveBeenCalled();
-      expect(chain.eq).toHaveBeenCalledWith('id', 'a1');
+      expect(mockRpc).toHaveBeenCalledWith('remove_winery_admin', { target_admin_id: 'a1' });
     });
   });
 
