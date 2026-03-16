@@ -398,7 +398,19 @@ export async function translateContent(fields, targetLocale) {
     .functions.invoke('translate-content', {
       body: { fields, target_locale: targetLocale },
     });
-  if (error) throw error;
+  if (error) {
+    // Extract details from FunctionsHttpError / FunctionsRelayError
+    let detail = error.message || 'Unknown edge function error';
+    if (error.context?.body) {
+      try {
+        const body = typeof error.context.body === 'string'
+          ? JSON.parse(error.context.body)
+          : error.context.body;
+        if (body?.error) detail = body.error;
+      } catch (_) { /* ignore parse errors */ }
+    }
+    throw new Error(detail);
+  }
   if (data?.error) throw new Error(data.error);
   return data.translations;
 }
