@@ -82,7 +82,7 @@ async function route() {
     }
   } catch (err) {
     logger.error('Route render failed', err, { view });
-    showToast('Something went wrong loading this page.', 'error');
+    showToast(`Something went wrong loading this page. [${view}: ${err.message}]`, 'error');
   }
 }
 
