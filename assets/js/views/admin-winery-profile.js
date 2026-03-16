@@ -1,5 +1,6 @@
 import * as logger from '../logger.js';
-import { escapeHtml, showToast } from '../utils.js';
+import { escapeHtml, showToast, slugify } from '../utils.js';
+import { navigate } from '../router.js';
 import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
 import { createImageUpload } from '../components/image-upload.js';
@@ -8,17 +9,36 @@ import { createTranslationPanel } from '../components/translation-panel.js';
 
 export async function renderWineryProfile(container) {
   const winery = state.getCurrentWinery();
+  const isSuperAdmin = state.getUserRole() === 'super_admin';
 
   if (!winery) {
     container.innerHTML = '<p>No winery assigned. Contact a super admin.</p>';
     return;
   }
 
+  const superAdminFields = isSuperAdmin ? `
+    <label for="profile-name">Name</label>
+    <input type="text" id="profile-name" name="name" required value="${escapeHtml(winery.name || '')}" />
+
+    <label for="profile-slug">Slug</label>
+    <input type="text" id="profile-slug" name="slug" required value="${escapeHtml(winery.slug || '')}" pattern="[a-z0-9-]+" title="Lowercase letters, numbers, and hyphens only" />
+  ` : `<p class="admin-winery-profile__name">${escapeHtml(winery.name)}</p>`;
+
+  const activeToggle = isSuperAdmin ? `
+    <div class="admin-winery-form__toggle">
+      <label>
+        <input type="checkbox" id="profile-active" ${winery.is_active ? 'checked' : ''} />
+        Active (visible to guests)
+      </label>
+    </div>
+  ` : '';
+
   container.innerHTML = `
     <div class="admin-winery-form">
-      <h1>Winery Profile</h1>
-      <p class="admin-winery-profile__name">${escapeHtml(winery.name)}</p>
+      <h1>${isSuperAdmin ? 'Winery Settings' : 'Winery Profile'}</h1>
       <form id="profile-form">
+        ${superAdminFields}
+
         <label>Logo</label>
         <div id="profile-logo-container"></div>
 
@@ -55,6 +75,8 @@ export async function renderWineryProfile(container) {
           <label for="profile-twitter">Twitter / X</label>
           <input type="url" id="profile-twitter" name="social_twitter" value="${escapeHtml(winery.social_twitter || '')}" />
         </fieldset>
+
+        ${activeToggle}
 
         <div id="profile-translations-container"></div>
 
@@ -108,6 +130,22 @@ export async function renderWineryProfile(container) {
     if (canvas) printQR(canvas, winery.name);
   });
 
+  // Auto-generate slug from name for super admins
+  if (isSuperAdmin) {
+    const nameInput = document.getElementById('profile-name');
+    const slugInput = document.getElementById('profile-slug');
+    const currentSlug = winery.slug || '';
+    const derivedSlug = slugify(winery.name || '');
+    let slugManuallyEdited = currentSlug !== derivedSlug;
+
+    slugInput.addEventListener('input', () => { slugManuallyEdited = true; });
+    nameInput.addEventListener('input', () => {
+      if (!slugManuallyEdited) {
+        slugInput.value = slugify(nameInput.value);
+      }
+    });
+  }
+
   document.getElementById('profile-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -126,6 +164,13 @@ export async function renderWineryProfile(container) {
       translations: translationPanel.getTranslations() || winery.translations || {},
     };
 
+    if (isSuperAdmin) {
+      data.name = document.getElementById('profile-name').value.trim();
+      data.slug = document.getElementById('profile-slug').value.trim();
+      const activeCheckbox = document.getElementById('profile-active');
+      data.is_active = activeCheckbox.checked;
+    }
+
     submitBtn.disabled = true;
     submitBtn.textContent = 'Saving…';
 
@@ -137,7 +182,8 @@ export async function renderWineryProfile(container) {
       submitBtn.textContent = 'Save Changes';
     } catch (err) {
       logger.error('Failed to update winery profile', err);
-      showToast('Could not save profile. Please try again.', 'error');
+      const msg = err.message?.includes('duplicate') ? 'A winery with that slug already exists.' : 'Could not save profile. Please try again.';
+      showToast(msg, 'error');
       submitBtn.disabled = false;
       submitBtn.textContent = 'Save Changes';
     }

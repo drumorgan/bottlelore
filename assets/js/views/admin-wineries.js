@@ -52,7 +52,6 @@ export async function renderWineryList(container) {
             </span>
           </td>
           <td class="admin-table__actions">
-            <button class="btn btn--small" data-edit="${escapeHtml(w.id)}">Edit</button>
             <button class="btn btn--small btn--outline" data-toggle="${escapeHtml(w.id)}" data-active="${w.is_active}">
               ${w.is_active ? 'Deactivate' : 'Activate'}
             </button>
@@ -61,11 +60,6 @@ export async function renderWineryList(container) {
           </td>
         </tr>
       `).join('');
-
-      // Edit buttons
-      tbody.querySelectorAll('[data-edit]').forEach(btn => {
-        btn.addEventListener('click', () => navigate(`/admin/wineries/${btn.dataset.edit}/edit`));
-      });
 
       // Toggle active buttons
       tbody.querySelectorAll('[data-toggle]').forEach(btn => {
@@ -131,112 +125,67 @@ export async function renderWineryList(container) {
   }
 }
 
-export async function renderWineryForm(container, wineryId) {
-  let winery = null;
-
-  if (wineryId) {
-    try {
-      const list = state.getAdminWineryList();
-      winery = list.find(w => w.id === wineryId) || null;
-      if (!winery) {
-        // Fetch directly if not in state
-        const all = await gateway.getAllWineriesAdmin();
-        winery = all.find(w => w.id === wineryId) || null;
-      }
-      if (!winery) {
-        showToast('Winery not found.', 'error');
-        navigate('/admin/wineries');
-        return;
-      }
-    } catch (err) {
-      logger.error('Failed to load winery', err, { wineryId });
-      showToast('Could not load winery.', 'error');
-      navigate('/admin/wineries');
-      return;
-    }
-  }
-
-  const isEdit = !!winery;
-  const title = isEdit ? `Edit ${escapeHtml(winery.name)}` : 'Add New Winery';
-
+export async function renderWineryForm(container) {
   container.innerHTML = `
     <div class="admin-winery-form">
-      <h1>${title}</h1>
+      <h1>Add New Winery</h1>
       <form id="winery-form">
         <label for="winery-name">Name</label>
-        <input type="text" id="winery-name" name="name" required value="${escapeHtml(winery?.name || '')}" />
+        <input type="text" id="winery-name" name="name" required value="" />
 
         <label>Logo</label>
         <div id="winery-logo-container"></div>
 
         <label for="winery-slug">Slug</label>
-        <input type="text" id="winery-slug" name="slug" required value="${escapeHtml(winery?.slug || '')}" pattern="[a-z0-9-]+" title="Lowercase letters, numbers, and hyphens only" />
+        <input type="text" id="winery-slug" name="slug" required value="" pattern="[a-z0-9-]+" title="Lowercase letters, numbers, and hyphens only" />
 
         <label for="winery-location">Location</label>
-        <input type="text" id="winery-location" name="location" value="${escapeHtml(winery?.location || '')}" />
+        <input type="text" id="winery-location" name="location" value="" />
 
         <label for="winery-description">Description</label>
-        <textarea id="winery-description" name="description">${escapeHtml(winery?.description || '')}</textarea>
+        <textarea id="winery-description" name="description"></textarea>
 
         <label for="winery-phone">Phone</label>
-        <input type="tel" id="winery-phone" name="phone" value="${escapeHtml(winery?.phone || '')}" />
+        <input type="tel" id="winery-phone" name="phone" value="" />
 
         <label for="winery-hours">Hours</label>
-        <input type="text" id="winery-hours" name="hours" value="${escapeHtml(winery?.hours || '')}" />
+        <input type="text" id="winery-hours" name="hours" value="" />
 
         <label for="winery-website">Website URL</label>
-        <input type="url" id="winery-website" name="website_url" value="${escapeHtml(winery?.website_url || '')}" />
+        <input type="url" id="winery-website" name="website_url" value="" />
 
         <label for="winery-theme">Guest Page Theme</label>
         <select id="winery-theme" name="theme_preference">
-          <option value="auto" ${(winery?.theme_preference || 'auto') === 'auto' ? 'selected' : ''}>Auto (follows guest's device)</option>
-          <option value="day" ${winery?.theme_preference === 'day' ? 'selected' : ''}>Day (always light)</option>
-          <option value="night" ${winery?.theme_preference === 'night' ? 'selected' : ''}>Night (always dark)</option>
+          <option value="auto" selected>Auto (follows guest's device)</option>
+          <option value="day">Day (always light)</option>
+          <option value="night">Night (always dark)</option>
         </select>
 
         <fieldset class="admin-winery-form__socials">
           <legend>Social Media</legend>
           <label for="winery-facebook">Facebook</label>
-          <input type="url" id="winery-facebook" name="social_facebook" value="${escapeHtml(winery?.social_facebook || '')}" />
+          <input type="url" id="winery-facebook" name="social_facebook" value="" />
 
           <label for="winery-instagram">Instagram</label>
-          <input type="url" id="winery-instagram" name="social_instagram" value="${escapeHtml(winery?.social_instagram || '')}" />
+          <input type="url" id="winery-instagram" name="social_instagram" value="" />
 
           <label for="winery-twitter">Twitter / X</label>
-          <input type="url" id="winery-twitter" name="social_twitter" value="${escapeHtml(winery?.social_twitter || '')}" />
+          <input type="url" id="winery-twitter" name="social_twitter" value="" />
         </fieldset>
-
-        ${isEdit ? `
-        <div class="admin-winery-form__toggle">
-          <label>
-            <input type="checkbox" id="winery-active" ${winery.is_active ? 'checked' : ''} />
-            Active (visible to guests)
-          </label>
-        </div>` : ''}
 
         <div id="winery-translations-container"></div>
 
-        <button type="submit" class="btn btn--primary">${isEdit ? 'Save Changes' : 'Create Winery'}</button>
+        <button type="submit" class="btn btn--primary">Create Winery</button>
         <button type="button" id="cancel-btn" class="btn btn--secondary">Cancel</button>
       </form>
-      ${isEdit ? `
-      <section class="admin-winery-form__qr">
-        <h2>QR Code</h2>
-        <div id="winery-qr-container"></div>
-        <p id="winery-qr-url" class="qr-modal__url"></p>
-        <div class="qr-modal__actions">
-          <button type="button" id="winery-qr-download" class="btn btn--small btn--primary">Download PNG</button>
-          <button type="button" id="winery-qr-print" class="btn btn--small btn--outline">Print</button>
-        </div>
-      </section>` : ''}
     </div>
   `;
 
   const tempId = crypto.randomUUID();
   const logoUpload = createImageUpload(document.getElementById('winery-logo-container'), {
     bucket: 'winery-logos',
-    pathPrefix: isEdit ? winery.id : tempId,
-    currentUrl: winery?.logo_url || null,
+    pathPrefix: tempId,
+    currentUrl: null,
     label: 'Winery Logo',
     id: 'winery-logo',
   });
@@ -257,36 +206,17 @@ export async function renderWineryForm(container, wineryId) {
 
   document.getElementById('cancel-btn').addEventListener('click', () => navigate('/admin/wineries'));
 
-  // Render QR code for existing wineries
-  if (isEdit) {
-    const url = getWineryUrl(winery.slug);
-    document.getElementById('winery-qr-url').textContent = url;
-    generateQR(document.getElementById('winery-qr-container'), url);
+  // Auto-generate slug from name
+  const nameInput = document.getElementById('winery-name');
+  const slugInput = document.getElementById('winery-slug');
+  let slugManuallyEdited = false;
 
-    document.getElementById('winery-qr-download').addEventListener('click', () => {
-      const canvas = document.querySelector('#winery-qr-container canvas');
-      if (canvas) downloadQR(canvas, winery.name);
-    });
-    document.getElementById('winery-qr-print').addEventListener('click', () => {
-      const canvas = document.querySelector('#winery-qr-container canvas');
-      if (canvas) printQR(canvas, winery.name);
-    });
-  }
-
-  // Auto-generate slug from name for new wineries
-  if (!isEdit) {
-    const nameInput = document.getElementById('winery-name');
-    const slugInput = document.getElementById('winery-slug');
-    let slugManuallyEdited = false;
-
-    slugInput.addEventListener('input', () => { slugManuallyEdited = true; });
-
-    nameInput.addEventListener('input', () => {
-      if (!slugManuallyEdited) {
-        slugInput.value = slugify(nameInput.value);
-      }
-    });
-  }
+  slugInput.addEventListener('input', () => { slugManuallyEdited = true; });
+  nameInput.addEventListener('input', () => {
+    if (!slugManuallyEdited) {
+      slugInput.value = slugify(nameInput.value);
+    }
+  });
 
   document.getElementById('winery-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -308,29 +238,19 @@ export async function renderWineryForm(container, wineryId) {
       translations: translationPanel.getTranslations() || winery?.translations || {},
     };
 
-    if (isEdit) {
-      const activeCheckbox = document.getElementById('winery-active');
-      data.is_active = activeCheckbox.checked;
-    }
-
     submitBtn.disabled = true;
     submitBtn.textContent = 'Saving…';
 
     try {
-      if (isEdit) {
-        await gateway.updateWinery(winery.id, data);
-        showToast('Winery updated.', 'success');
-      } else {
-        await gateway.createWinery(data);
-        showToast('Winery created.', 'success');
-      }
+      await gateway.createWinery(data);
+      showToast('Winery created.', 'success');
       navigate('/admin/wineries');
     } catch (err) {
       logger.error('Failed to save winery', err);
       const msg = err.message?.includes('duplicate') ? 'A winery with that slug already exists.' : 'Could not save winery. Please try again.';
       showToast(msg, 'error');
       submitBtn.disabled = false;
-      submitBtn.textContent = isEdit ? 'Save Changes' : 'Create Winery';
+      submitBtn.textContent = 'Create Winery';
     }
   });
 }

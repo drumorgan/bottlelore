@@ -11,8 +11,7 @@ import * as logger from './logger.js';
 //   /admin/wines/:id/edit            → edit wine
 //   /admin/wineries                  → super admin winery list
 //   /admin/wineries/new              → add winery
-//   /admin/wineries/:id/edit         → edit winery
-//   /admin/winery/profile            → owner edits own winery
+//   /admin/winery/profile            → winery settings (owner + super admin)
 //   /admin/flights                   → flight list
 //   /admin/flights/new               → add flight
 //   /admin/flights/:id/edit          → edit flight
