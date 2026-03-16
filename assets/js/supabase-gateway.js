@@ -388,7 +388,7 @@ export function getPublicUrl(bucket, path) {
 // ── Translations ────────────────────────────────────────────────────────────
 
 /**
- * Call the translate-content Edge Function to translate text via DeepL.
+ * Call the translate-content Edge Function to translate text via MyMemory.
  * @param {Object} fields — key/value pairs to translate (e.g. { name: 'Red Wine', description: '...' })
  * @param {string} targetLocale — target locale code (e.g. 'es')
  * @returns {Object} — translated key/value pairs
