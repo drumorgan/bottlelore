@@ -7,6 +7,7 @@ import { generateQR, getBottleUrl, downloadQR, printQR } from '../components/qr-
 import { createQRModal } from '../components/qr-modal.js';
 import { createTagInput } from '../components/tag-input.js';
 import { createImageUpload } from '../components/image-upload.js';
+import { createTranslationPanel } from '../components/translation-panel.js';
 
 export async function renderWineList(container) {
   container.innerHTML = '<div class="loading">Loading wines...</div>';
@@ -154,6 +155,8 @@ export async function renderWineForm(container, wineId) {
         <label>Food Pairings</label>
         <div id="wine-pairings-container"></div>
 
+        <div id="wine-translations-container"></div>
+
         <button type="submit" class="btn btn--primary">${isEdit ? 'Save Changes' : 'Create Wine'}</button>
         <button type="button" id="cancel-btn" class="btn btn--secondary">Cancel</button>
       </form>
@@ -182,6 +185,26 @@ export async function renderWineForm(container, wineId) {
     initialTags: wine?.food_pairings || [],
     placeholder: 'e.g. Grilled steak — press Enter',
     id: 'wine-pairings',
+  });
+
+  const translationPanel = createTranslationPanel(document.getElementById('wine-translations-container'), {
+    fields: {
+      name: { label: 'Name', type: 'text' },
+      varietal: { label: 'Varietal', type: 'text' },
+      region: { label: 'Region', type: 'text' },
+      description: { label: 'Description', type: 'textarea' },
+      tasting_notes: { label: 'Tasting Notes', type: 'textarea' },
+      food_pairings: { label: 'Food Pairings', type: 'tags' },
+    },
+    existingTranslations: wine?.translations?.es || null,
+    getSourceValues: () => ({
+      name: document.getElementById('wine-name').value.trim(),
+      varietal: document.getElementById('wine-varietal').value.trim(),
+      region: document.getElementById('wine-region').value.trim(),
+      description: document.getElementById('wine-description').value.trim(),
+      tasting_notes: document.getElementById('wine-tasting-notes').value.trim(),
+      food_pairings: pairingsInput.getTags(),
+    }),
   });
 
   document.getElementById('cancel-btn').addEventListener('click', () => navigate('/admin/wines'));
@@ -216,6 +239,7 @@ export async function renderWineForm(container, wineId) {
       tasting_notes: document.getElementById('wine-tasting-notes').value.trim() || null,
       food_pairings: pairingsInput.getTags(),
       image_url: wineImageUpload.getUrl(),
+      translations: translationPanel.getTranslations() || wine?.translations || {},
     };
 
     submitBtn.disabled = true;

@@ -6,6 +6,7 @@ import * as state from '../state.js';
 import { createImageUpload } from '../components/image-upload.js';
 import { generateQR, getWineryUrl, downloadQR, printQR } from '../components/qr-generator.js';
 import { createQRModal } from '../components/qr-modal.js';
+import { createTranslationPanel } from '../components/translation-panel.js';
 
 export async function renderWineryList(container) {
   container.innerHTML = '<div class="loading">Loading wineries...</div>';
@@ -172,6 +173,8 @@ export async function renderWineryForm(container) {
           <input type="url" id="winery-twitter" name="social_twitter" value="" />
         </fieldset>
 
+        <div id="winery-translations-container"></div>
+
         <button type="submit" class="btn btn--primary">Create Winery</button>
         <button type="button" id="cancel-btn" class="btn btn--secondary">Cancel</button>
       </form>
@@ -185,6 +188,20 @@ export async function renderWineryForm(container) {
     currentUrl: null,
     label: 'Winery Logo',
     id: 'winery-logo',
+  });
+
+  const translationPanel = createTranslationPanel(document.getElementById('winery-translations-container'), {
+    fields: {
+      name: { label: 'Name', type: 'text' },
+      description: { label: 'Description', type: 'textarea' },
+      hours: { label: 'Hours', type: 'text' },
+    },
+    existingTranslations: winery?.translations?.es || null,
+    getSourceValues: () => ({
+      name: document.getElementById('winery-name').value.trim(),
+      description: document.getElementById('winery-description').value.trim(),
+      hours: document.getElementById('winery-hours').value.trim(),
+    }),
   });
 
   document.getElementById('cancel-btn').addEventListener('click', () => navigate('/admin/wineries'));
@@ -218,6 +235,7 @@ export async function renderWineryForm(container) {
       social_twitter: document.getElementById('winery-twitter').value.trim() || null,
       logo_url: logoUpload.getUrl(),
       theme_preference: document.getElementById('winery-theme').value,
+      translations: translationPanel.getTranslations() || winery?.translations || {},
     };
 
     submitBtn.disabled = true;

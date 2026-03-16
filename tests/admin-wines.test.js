@@ -244,6 +244,7 @@ describe('admin-wines', () => {
           tasting_notes: null,
           food_pairings: ['Steak', 'Lamb'],
           image_url: null,
+          translations: {},
           winery_id: 'w1',
         });
         expect(navigate).toHaveBeenCalledWith('/admin/wines');

@@ -239,3 +239,37 @@ textarea:focus {
   border-color: #6b2fa0;
   box-shadow: 0 0 0 2px rgba(107, 47, 160, 0.2);
 }
+
+/* ── Language Toggle ───────────────────────────────────────────────────── */
+
+.lang-toggle {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--rule, rgba(0,0,0,0.1));
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.lang-toggle__btn {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted, #666);
+  font-family: 'Cormorant SC', serif;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.lang-toggle__btn:hover {
+  color: var(--text-primary, #333);
+}
+
+.lang-toggle__btn--active {
+  background: var(--bg-card, #fff);
+  color: var(--text-primary, #333);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}

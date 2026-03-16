@@ -4,6 +4,7 @@ import { navigate } from '../router.js';
 import * as gateway from '../supabase-gateway.js';
 import * as state from '../state.js';
 import { generateQR, getFlightUrl, downloadQR, printQR } from '../components/qr-generator.js';
+import { createTranslationPanel } from '../components/translation-panel.js';
 
 export async function renderFlightList(container) {
   const winery = state.getCurrentWinery();
@@ -214,6 +215,8 @@ export async function renderFlightForm(container, flightId) {
           }
         </fieldset>
 
+        <div id="flight-translations-container"></div>
+
         <button type="submit" class="btn btn--primary">${isEdit ? 'Save Changes' : 'Create Flight'}</button>
         <button type="button" id="cancel-btn" class="btn btn--secondary">Cancel</button>
       </form>
@@ -229,6 +232,18 @@ export async function renderFlightForm(container, flightId) {
       </section>` : ''}
     </div>
   `;
+
+  const translationPanel = createTranslationPanel(document.getElementById('flight-translations-container'), {
+    fields: {
+      name: { label: 'Name', type: 'text' },
+      description: { label: 'Description', type: 'textarea' },
+    },
+    existingTranslations: flight?.translations?.es || null,
+    getSourceValues: () => ({
+      name: document.getElementById('flight-name').value.trim(),
+      description: document.getElementById('flight-description').value.trim(),
+    }),
+  });
 
   document.getElementById('cancel-btn').addEventListener('click', () => navigate('/admin/flights'));
 
@@ -260,6 +275,7 @@ export async function renderFlightForm(container, flightId) {
       name: document.getElementById('flight-name').value.trim(),
       description: document.getElementById('flight-description').value.trim() || null,
       sort_order: parseInt(document.getElementById('flight-sort-order').value, 10) || 0,
+      translations: translationPanel.getTranslations() || flight?.translations || {},
     };
 
     if (isEdit) {

@@ -5,6 +5,7 @@ import { onAuthStateChange } from './supabase-gateway.js';
 import { setCurrentUser, resetAllState, isLoggedIn, setUserRole, setSuperAdmin, setUserWineryAssignments } from './state.js';
 import { checkIsSuperAdmin, getAdminWineries } from './supabase-gateway.js';
 import { init as initTheme } from './theme.js';
+import { detectLocale } from './i18n.js';
 
 // Build info is injected by Vite at compile time — use try/catch for dev/unbundled mode
 // (Safari/iPad throws ReferenceError on bare globals even with typeof guard)
@@ -16,6 +17,7 @@ logger.info('BottleLore starting', { build: buildSha, time: buildTime });
 
 registerGlobalErrorHandlers();
 initTheme();
+detectLocale();
 
 // Resolved once the first auth state event fires (session restored or no session)
 let authReady;
