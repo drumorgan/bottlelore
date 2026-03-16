@@ -1,11 +1,15 @@
 import * as logger from './logger.js';
 import { registerGlobalErrorHandlers, showToast } from './utils.js';
-import { parsePath } from './router.js';
+import { parsePath, navigate } from './router.js';
 import { onAuthStateChange } from './supabase-gateway.js';
 import { setCurrentUser, resetAllState, isLoggedIn, setUserRole, setSuperAdmin, setUserWineryAssignments } from './state.js';
 import { checkIsSuperAdmin, getAdminWineries } from './supabase-gateway.js';
 import { init as initTheme } from './theme.js';
 import { detectLocale } from './i18n.js';
+
+// Check if arriving via invite accept link (Supabase puts tokens in URL hash)
+const _hashParams = new URLSearchParams(window.location.hash.substring(1));
+const _isInviteAccept = _hashParams.get('type') === 'invite';
 
 // Build info is injected by Vite at compile time — use try/catch for dev/unbundled mode
 // (Safari/iPad throws ReferenceError on bare globals even with typeof guard)
@@ -95,6 +99,14 @@ onAuthStateChange((user) => {
 
     // Detect role in background — don't block initial route render
     detectRole(user.id);
+
+    // Invite accept: user clicked email link → redirect to admin
+    if (_isInviteAccept && !authFired) {
+      // Clean hash from URL and navigate to admin
+      window.history.replaceState({}, '', '/admin/wines');
+      // Re-route after auth resolves (slight delay to let authReady propagate)
+      setTimeout(() => route(), 0);
+    }
   } else {
     resetAllState();
     logger.clearUser();
