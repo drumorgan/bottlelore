@@ -22,14 +22,14 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php [L,QSA]
 
-# No-cache for JS modules (prevents stale ES module cache)
-<FilesMatch "\.(js)$">
-  <If "%{REQUEST_URI} =~ m#^/assets/js/#">
+# Cache headers for JS assets (wrapped in IfModule so missing mod_headers won't 500)
+<IfModule mod_headers.c>
+  # No-cache for source JS modules
+  <FilesMatch "\.js$">
     Header set Cache-Control "no-cache, must-revalidate, max-age=0"
-  </If>
-</FilesMatch>
-
-# Long cache for Vite-hashed bundles
-<FilesMatch "\.min\.js$">
-  Header set Cache-Control "public, max-age=31536000, immutable"
-</FilesMatch>
+  </FilesMatch>
+  # Long cache for Vite-hashed production bundles (overrides above for *.min.js)
+  <FilesMatch "\.min\.js$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
