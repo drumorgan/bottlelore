@@ -45,10 +45,7 @@ export async function render(container, view, options = {}) {
       await renderWineryList(content);
       break;
     case 'admin-winery-new':
-      await renderWineryForm(content, null);
-      break;
-    case 'admin-winery-edit':
-      await renderWineryForm(content, options.wineryId);
+      await renderWineryForm(content);
       break;
     case 'admin-winery-profile':
       await renderWineryProfile(content);
