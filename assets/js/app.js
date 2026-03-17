@@ -7,9 +7,10 @@ import { checkIsSuperAdmin, getAdminWineries } from './supabase-gateway.js';
 import { init as initTheme } from './theme.js';
 import { detectLocale } from './i18n.js';
 
-// Check if arriving via invite accept link (Supabase puts tokens in URL hash)
+// Check if arriving via invite/recovery link (Supabase puts tokens in URL hash)
 const _hashParams = new URLSearchParams(window.location.hash.substring(1));
-const _isInviteAccept = _hashParams.get('type') === 'invite';
+const _hashType = _hashParams.get('type');
+const _isInviteAccept = _hashType === 'invite' || _hashType === 'recovery';
 const _authError = _hashParams.get('error_description');
 
 // Build info is injected by Vite at compile time — use try/catch for dev/unbundled mode
@@ -44,7 +45,7 @@ async function route() {
 
   // Wait for Supabase to restore the session before rendering protected admin views
   // (skip for admin-login — it doesn't need auth and should render instantly)
-  if (view.startsWith('admin') && view !== 'admin-login' && !isLoggedIn()) {
+  if (view.startsWith('admin') && view !== 'admin-login' && view !== 'admin-set-password' && !isLoggedIn()) {
     await authReadyPromise;
   }
 
@@ -86,6 +87,11 @@ async function route() {
         await render(app, view, routeInfo);
         break;
       }
+      case 'admin-set-password': {
+        const { render } = await import('./views/set-password.js');
+        render(app);
+        break;
+      }
       case 'home': {
         const { render } = await import('./views/home.js');
         await render(app);
@@ -110,11 +116,9 @@ onAuthStateChange((user) => {
     // Detect role in background — don't block initial route render
     detectRole(user.id);
 
-    // Invite accept: user clicked email link → redirect to admin
+    // Invite/recovery accept: user clicked email link → set password
     if (_isInviteAccept && !authFired) {
-      // Clean hash from URL and navigate to admin
-      window.history.replaceState({}, '', '/admin/wines');
-      // Re-route after auth resolves (slight delay to let authReady propagate)
+      window.history.replaceState({}, '', '/admin/set-password');
       setTimeout(() => route(), 0);
     }
   } else {

@@ -17,6 +17,7 @@ import * as logger from './logger.js';
 //   /admin/flights/:id/edit          → edit flight
 //   /admin/staff                     → staff list
 //   /admin/staff/invite              → invite staff
+//   /admin/set-password              → set password (invite accept)
 
 export function parsePath(pathname = window.location.pathname) {
   const parts = pathname.replace(/^\/|\/$/g, '').split('/');
@@ -53,6 +54,8 @@ export function parsePath(pathname = window.location.pathname) {
       if (parts.length === 2) return { view: 'admin-staff' };
       if (parts[2] === 'invite') return { view: 'admin-staff-invite' };
     }
+
+    if (parts[1] === 'set-password') return { view: 'admin-set-password' };
 
     return { view: 'not-found' };
   }

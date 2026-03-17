@@ -34,6 +34,16 @@ export async function signIn(email, password) {
   return data;
 }
 
+export async function resetPassword(email) {
+  const { error } = await getClient().auth.resetPasswordForEmail(email);
+  if (error) throw error;
+}
+
+export async function updatePassword(newPassword) {
+  const { error } = await getClient().auth.updateUser({ password: newPassword });
+  if (error) throw error;
+}
+
 export async function signOut() {
   const { error } = await getClient().auth.signOut();
   if (error) throw error;
@@ -52,8 +62,8 @@ export async function getCurrentUser() {
 }
 
 export function onAuthStateChange(callback) {
-  return getClient().auth.onAuthStateChange((_event, session) => {
-    callback(session?.user ?? null);
+  return getClient().auth.onAuthStateChange((event, session) => {
+    callback(session?.user ?? null, event);
   });
 }
 
@@ -350,9 +360,7 @@ export async function inviteUser(email, wineryId, role) {
  */
 export async function updateWineryAdminRole(adminId, newRole) {
   const { error } = await getClient()
-    .from(TABLES.WINERY_ADMINS)
-    .update({ role: newRole })
-    .eq('id', adminId);
+    .rpc('update_winery_admin_role', { target_admin_id: adminId, new_role: newRole });
   if (error) throw error;
 }
 
