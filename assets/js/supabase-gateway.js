@@ -35,7 +35,9 @@ export async function signIn(email, password) {
 }
 
 export async function resetPassword(email) {
-  const { error } = await getClient().auth.resetPasswordForEmail(email);
+  const { error } = await getClient().auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/admin/set-password`,
+  });
   if (error) throw error;
 }
 
