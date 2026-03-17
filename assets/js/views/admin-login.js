@@ -15,6 +15,9 @@ export function renderLogin(container) {
         <input type="password" id="password" name="password" required autocomplete="current-password" />
         <button type="submit">Sign In</button>
       </form>
+      <p class="admin-login__hint" style="margin-top: 1rem; text-align: center;">
+        <a href="#" id="forgot-password-link">Forgot password?</a>
+      </p>
     </div>
   `;
 
@@ -60,6 +63,24 @@ export function renderLogin(container) {
       showToast(`Login failed: ${msg}`, 'error');
       submitBtn.disabled = false;
       submitBtn.textContent = 'Sign In';
+    }
+  });
+
+  document.getElementById('forgot-password-link').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const emailInput = document.getElementById('email');
+    const email = emailInput.value.trim();
+    if (!email) {
+      showToast('Enter your email address first, then tap Forgot password.', 'error');
+      emailInput.focus();
+      return;
+    }
+    try {
+      await gateway.resetPassword(email);
+      showToast('Password reset email sent. Check your inbox.', 'success');
+    } catch (err) {
+      logger.error('Password reset failed', err);
+      showToast(`Reset failed: ${err.message}`, 'error');
     }
   });
 }
