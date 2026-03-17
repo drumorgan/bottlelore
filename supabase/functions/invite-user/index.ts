@@ -21,8 +21,8 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { email, winery_id, role } = await req.json();
-    console.log("invite-user: request received", { email, winery_id, role });
+    const { email, winery_id, role, redirect_to } = await req.json();
+    console.log("invite-user: request received", { email, winery_id, role, redirect_to });
 
     if (!email || !winery_id || !role) {
       console.error("invite-user: missing fields", { email, winery_id, role });
@@ -130,8 +130,10 @@ Deno.serve(async (req: Request) => {
     } else {
       // Invite new user via email
       console.log("invite-user: inviting new user", email);
+      const inviteOpts: Record<string, unknown> = {};
+      if (redirect_to) inviteOpts.redirectTo = redirect_to;
       const { data: inviteData, error: inviteErr } =
-        await adminClient.auth.admin.inviteUserByEmail(email);
+        await adminClient.auth.admin.inviteUserByEmail(email, inviteOpts);
 
       if (inviteErr) {
         console.error("invite-user: inviteUserByEmail failed", inviteErr.message);

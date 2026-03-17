@@ -16,11 +16,14 @@ function getClient() {
   }
 
   // Keep auth config minimal — Safari/iPad ITP compatibility
+  // flowType: 'implicit' avoids PKCE code-exchange issues when 301 redirects
+  // (non-www → www) interfere with the auth callback URL
   _client = createClient(config.url, config.anonKey, {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
+      flowType: 'implicit',
     },
   });
   return _client;
@@ -339,7 +342,12 @@ export async function getWineryStaff(wineryId) {
 export async function inviteUser(email, wineryId, role) {
   const { data, error } = await getClient()
     .functions.invoke('invite-user', {
-      body: { email, winery_id: wineryId, role },
+      body: {
+        email,
+        winery_id: wineryId,
+        role,
+        redirect_to: `${window.location.origin}/admin/set-password`,
+      },
     });
   if (error) {
     let detail = error.message || 'Unknown edge function error';

@@ -314,7 +314,7 @@ describe('supabase-gateway', () => {
 
       const result = await gateway.inviteUser('new@test.com', 'w1', 'staff');
       expect(mockFunctions.invoke).toHaveBeenCalledWith('invite-user', {
-        body: { email: 'new@test.com', winery_id: 'w1', role: 'staff' },
+        body: { email: 'new@test.com', winery_id: 'w1', role: 'staff', redirect_to: 'http://localhost:3000/admin/set-password' },
       });
       expect(result).toEqual({ message: 'Invited' });
     });
