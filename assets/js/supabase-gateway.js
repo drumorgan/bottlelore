@@ -39,6 +39,11 @@ export async function resetPassword(email) {
   if (error) throw error;
 }
 
+export async function updatePassword(newPassword) {
+  const { error } = await getClient().auth.updateUser({ password: newPassword });
+  if (error) throw error;
+}
+
 export async function signOut() {
   const { error } = await getClient().auth.signOut();
   if (error) throw error;
@@ -57,8 +62,8 @@ export async function getCurrentUser() {
 }
 
 export function onAuthStateChange(callback) {
-  return getClient().auth.onAuthStateChange((_event, session) => {
-    callback(session?.user ?? null);
+  return getClient().auth.onAuthStateChange((event, session) => {
+    callback(session?.user ?? null, event);
   });
 }
 
