@@ -350,9 +350,7 @@ export async function inviteUser(email, wineryId, role) {
  */
 export async function updateWineryAdminRole(adminId, newRole) {
   const { error } = await getClient()
-    .from(TABLES.WINERY_ADMINS)
-    .update({ role: newRole })
-    .eq('id', adminId);
+    .rpc('update_winery_admin_role', { target_admin_id: adminId, new_role: newRole });
   if (error) throw error;
 }
 
